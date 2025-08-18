@@ -1,0 +1,49 @@
+name: Build macOS App
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: macos-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.9'
+        
+    - name: Install Xcode tools
+      run: |
+        sudo xcode-select --install || true
+        sudo xcodebuild -license accept
+        
+    - name: Install dependencies
+      run: |
+        # 设置环境变量
+        export SDKROOT=$(xcrun --show-sdk-path)
+        export CFLAGS="-I$SDKROOT/usr/include"
+        
+        # 安装核心依赖
+        pip install pyinstaller flask requests jinja2
+        
+        # 安装 webview 的替代实现
+        pip install pywebview
+        
+    - name: Build application
+      run: |
+        pyinstaller macos_spec.spec
+        
+    - name: Create DMG
+      run: |
+        hdiutil create -volname "ClickFlare工具" \
+          -srcfolder dist/ClickFlare工具.app \
+          -ov -format UDZO \
+          dist/ClickFlare工具.dmg
+        
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: macOS-App
+        path: dist/ClickFlare工具.dmg
