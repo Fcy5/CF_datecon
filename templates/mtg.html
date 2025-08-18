@@ -1,0 +1,1485 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mintegral广告管理平台</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f0f5ff 0%, #e8edff 100%);
+            color: #2c3e50;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .ad-container {
+            width: 100%;
+            max-width: 950px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 15px 50px rgba(67, 97, 238, 0.2);
+            overflow: hidden;
+        }
+
+        .ad-banner {
+            background: linear-gradient(135deg, #5a67d8 0%, #3a0ca3 100%);
+            color: white;
+            padding: 25px 40px;
+            text-align: center;
+            position: relative;
+        }
+
+        .banner-content {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .ad-icon {
+            width: 50px;
+            height: 50px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .ad-icon i {
+            font-size: 24px;
+            color: #5a67d8;
+        }
+
+        .banner-text {
+            font-size: 26px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-shadow:  2px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .back-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            color: white;
+            padding: 10px 20px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin: 0 auto;
+            width: fit-content;
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .tab-container {
+            display: flex;
+            background: #f1f5f9;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 16px 20px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 15px;
+            color: #4a5568;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .tab-btn.active {
+            color: #5a67d8;
+        }
+
+        .tab-btn.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: #5a67d8;
+            border-radius: 3px 3px 0 0;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 35px 40px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .form-section, .preview-section, .creative-search-section, .campaign-search-section {
+            background: #f8fafc;
+            border-radius: 14px;
+            padding: 30px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.03);
+            margin-bottom: 25px;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 25px;
+            padding-bottom: 18px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .section-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #4361ee 0%, #3a0ca3 100%);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 18px;
+        }
+
+        .section-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #2c3e50;
+        }
+
+        .form-group {
+            margin-bottom: 22px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: #4a5568;
+            font-size: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .form-group label i {
+            color: #4361ee;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 15px 18px;
+            border-radius: 12px;
+            font-size: 15px;
+            border: 2px solid #e2e8f0;
+            background: white;
+            transition: all 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #4361ee;
+            box-shadow: 0 0 0 4px rgba(67, 97, 238, 0.15);
+        }
+
+        .description {
+            background: #edf2ff;
+            border-radius: 12px;
+            padding: 18px;
+            margin-bottom: 25px;
+            font-size: 14px;
+            color: #4a5568;
+        }
+
+        .description p {
+            margin-bottom: 8px;
+            line-height: 1.6;
+        }
+
+        .highlight {
+            background: #dbe7ff;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        .preview-container {
+            height: 260px;
+            background: #f0f5ff;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px dashed #c2d0ff;
+            margin-bottom: 25px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .preview-placeholder {
+            text-align: center;
+            color: #718096;
+        }
+
+        .preview-placeholder i {
+            font-size: 50px;
+            color: #c2d0ff;
+            margin-bottom: 15px;
+        }
+
+        .image-preview {
+            max-width: 100%;
+            max-height: 100%;
+            display: none;
+        }
+
+        .upload-container {
+            text-align: center;
+            position: relative;
+        }
+
+        .file-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 13px 28px;
+            background: linear-gradient(135deg, #4361ee 0%, #3a0ca3 100%);
+            color: white;
+            font-size: 15px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(67, 97, 238, 0.3);
+        }
+
+        .file-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(67, 97, 238, 0.4);
+        }
+
+        .file-btn:disabled {
+            background: #718096;
+            opacity: 0.7;
+            transform: none;
+            box-shadow: none;
+            cursor: not-allowed;
+        }
+
+        #file-upload {
+            display: none;
+        }
+
+        .note {
+            font-size: 14px;
+            color: #718096;
+            margin-top: 12px;
+            text-align: center;
+        }
+
+        .action-btn-container {
+            margin-top: 25px;
+            text-align: center;
+        }
+
+        .action-btn {
+            padding: 16px 45px;
+            border-radius: 12px;
+            font-size: 17px;
+            font-weight: 700;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .create-btn {
+            background: linear-gradient(135deg, #20c997 0%, #0d9488 100%);
+            color: white;
+            box-shadow: 0 8px 25px rgba(32, 201, 151, 0.35);
+        }
+
+        .create-btn:hover:not(:disabled) {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(32, 201, 151, 0.5);
+        }
+
+        .create-btn:disabled {
+            background: #718096;
+            opacity: 0.7;
+            transform: none;
+            box-shadow: none;
+            cursor: not-allowed;
+        }
+
+        .offer-btn {
+            background: linear-gradient(135deg, #4361ee 0%, #3a0ca3 100%);
+            color: white;
+            box-shadow: 0 8px 25px rgba(67, 97, 238, 0.35);
+        }
+
+        .offer-btn:hover:not(:disabled) {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(67, 97, 238, 0.5);
+        }
+
+        .offer-btn:disabled {
+            background: #718096;
+            opacity: 0.7;
+            transform: none;
+            box-shadow: none;
+            cursor: not-allowed;
+        }
+
+        .status-message {
+            padding: 16px;
+            border-radius: 10px;
+            margin-top: 20px;
+            text-align: center;
+            font-weight: 500;
+            display: none;
+        }
+
+        .success {
+            background: rgba(32, 201, 151, 0.15);
+            color: #0d8a66;
+            border: 1px solid rgba(32, 201, 151, 0.25);
+            display: block;
+        }
+
+        .error {
+            background: rgba(220, 53, 69, 0.15);
+            color: #b02a37;
+            border: 1px solid rgba(220, 53, 69, 0.25);
+            display: block;
+        }
+
+        .info {
+            background: rgba(13, 110, 253, 0.15);
+            color: #0d6efd;
+            border: 1px solid rgba(13, 110, 253, 0.25);
+            display: block;
+        }
+
+        .flex-form {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+        }
+
+        .result-section {
+            background: #f1f8ff;
+            border-radius: 14px;
+            padding: 25px;
+            border: 1px solid #c2e0ff;
+            margin-bottom: 25px;
+        }
+
+        .result-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2c5282;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .result-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .result-card {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e2e8f0;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .card-title {
+            font-weight: 600;
+            color: #4a5568;
+            font-size: 16px;
+        }
+
+        .card-icon {
+            color: #4361ee;
+            font-size: 16px;
+        }
+
+        .card-content {
+            display: grid;
+            gap: 8px;
+        }
+
+        .card-item {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+        }
+
+        .card-label {
+            color: #718096;
+        }
+
+        .card-value {
+            color: #2c3e50;
+            font-weight: 500;
+        }
+
+        .offer-form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .creative-search-row, .campaign-search-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .creative-search-row input, .campaign-search-row input {
+            flex: 1;
+        }
+
+        /* 新增的创意组搜索样式 */
+        .creative-search-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .creative-search-icon {
+            width: 36px;
+            height: 36px;
+            background: #4361ee;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            margin-right: 12px;
+        }
+
+        .creative-search-title {
+            font-weight: 600;
+            font-size: 18px;
+            color: #2c3e50;
+        }
+
+        .creative-search-form {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .creative-search-input {
+            flex: 1;
+            padding: 12px 15px;
+            border-radius: 8px;
+            border: 1px solid #ced4da;
+            font-size: 15px;
+        }
+
+        .creative-results-container {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 15px;
+            background: white;
+        }
+
+        .creative-result-item {
+            padding: 12px 15px;
+            border-bottom: 1px solid #e2e8f0;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .creative-result-item:hover {
+            background: #f1f5ff;
+        }
+
+        .creative-result-item.selected {
+            background: #e6f4ff;
+            border-left: 4px solid #4361ee;
+        }
+
+        .creative-result-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .creative-result-id {
+            font-weight: 600;
+            color: #4361ee;
+        }
+
+        .creative-result-name {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .creative-result-details {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            color: #718096;
+        }
+
+        /* 新增的广告查询样式 */
+        .campaign-search-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .campaign-search-icon {
+            width: 36px;
+            height: 36px;
+            background: #4361ee;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            margin-right: 12px;
+        }
+
+        .campaign-search-title {
+            font-weight: 600;
+            font-size: 18px;
+            color: #2c3e50;
+        }
+
+        .campaign-search-form {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .campaign-search-input {
+            flex: 1;
+            padding: 12px 15px;
+            border-radius: 8px;
+            border: 1px solid #ced4da;
+            font-size: 15px;
+        }
+
+        .campaign-results-container {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 15px;
+            background: white;
+        }
+
+        .campaign-result-item {
+            padding: 12px 15px;
+            border-bottom: 1px solid #e2e8f0;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .campaign-result-item:hover {
+            background: #f1f5ff;
+        }
+
+        .campaign-result-item.selected {
+            background: #e6f4ff;
+            border-left: 4px solid #4361ee;
+        }
+
+        .campaign-result-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .campaign-result-id {
+            font-weight: 600;
+            color: #4361ee;
+        }
+
+        .campaign-result-name {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .campaign-result-details {
+            display: flex;
+            flex-direction: column;
+            font-size: 14px;
+            color: #718096;
+            gap: 5px;
+        }
+
+        .campaign-result-row {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .campaign-result-label {
+            font-weight: 600;
+            min-width: 80px;
+        }
+
+
+    </style>
+</head>
+<body>
+    <div class="ad-container">
+        <!-- 顶部横幅 -->
+        <div class="ad-banner">
+            <div class="banner-content">
+                <div class="ad-icon">
+                    <i class="fas fa-ad"></i>
+                </div>
+                <div class="banner-text">Mintegral广告管理平台</div>
+            </div>
+
+            <button class="back-btn" id="back-to-log-btn">
+                <i class="fas fa-arrow-left"></i> 返回日志工具
+            </button>
+        </div>
+
+        <!-- 标签页容器 -->
+        <div class="tab-container">
+            <button class="tab-btn active" data-tab="campaign-search">广告查询</button>
+            <button class="tab-btn" data-tab="create-campaign">创建广告活动</button>
+            <button class="tab-btn" data-tab="creative-search">查询创意组</button>
+            <button class="tab-btn" data-tab="create-offer">创建广告单元</button>
+        </div>
+
+        <!-- 广告查询 -->
+        <div class="tab-content active" id="campaign-search">
+            <div class="campaign-search-section">
+                <div class="section-header">
+                    <div class="section-icon">
+                        <i class="fas fa-search"></i>
+                    </div>
+                    <div class="section-title">广告查询</div>
+                </div>
+
+                <div class="campaign-search-header">
+                    <div class="campaign-search-icon">
+                        <i class="fas fa-ad"></i>
+                    </div>
+                    <div class="campaign-search-title">按名称或ID搜索广告</div>
+                </div>
+
+                <div class="campaign-search-form">
+                    <input type="text" id="campaign-search-input" class="campaign-search-input" placeholder="输入广告名称、ID或包名">
+                    <button class="file-btn" id="search-campaign-btn">
+                        <i class="fas fa-search"></i> 查询广告
+                    </button>
+                </div>
+
+                <div class="campaign-results-container" id="campaign-results-container">
+                    <p style="text-align: center; color: #718096; padding: 20px;">请输入关键词查询广告</p>
+                </div>
+
+                <div class="selected-item" id="selected-campaign" style="display: none;">
+                    <div>
+                        <div><strong>已选广告：</strong><span id="selected-campaign-name">-</span></div>
+                        <div>ID: <span id="selected-campaign-id">-</span></div>
+                    </div>
+                    <button class="select-btn" id="use-for-offer-btn" style="background: white;
+                    margin-top: 20px;
+                    cursor: pointer;
+            border: 2px solid rgba(255, 255, 255, 0.8);
+            border-radius: 8px;
+            color: black;
+padding: 10px 20px">
+                        <i class="fas fa-layer-group"></i> 用于广告单元
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 广告活动创建 -->
+        <div class="tab-content" id="create-campaign">
+            <div class="flex-form">
+                <div class="form-section">
+                    <div class="section-header">
+                        <div class="section-icon">
+                            <i class="fas fa-cog"></i>
+                        </div>
+                        <div class="section-title">广告配置</div>
+                    </div>
+
+                    <div class="description">
+                        <p>系统会根据广告名称自动生成<span class="highlight">产品名称</span>和<span class="highlight">描述</span>。</p>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="campaign-name">
+                            <i class="fas fa-signature"></i> 广告名称
+                        </label>
+                        <input type="text" id="campaign-name" placeholder="示例：Mintegral_FCY_8221_walmart1k_20250730">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="preview-url">
+                            <i class="fas fa-link"></i> 预览链接
+                        </label>
+                        <input type="url" id="preview-url" placeholder="https://example.com/landing-page">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="platform">
+                            <i class="fas fa-mobile-alt"></i> 平台
+                        </label>
+                        <select id="platform">
+                            <option value="">请选择平台</option>
+                            <option value="ANDROID">安卓 (Android)</option>
+                            <option value="IOS">iOS</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="preview-section">
+                    <div class="section-header">
+                        <div class="section-icon">
+                            <i class="fas fa-image"></i>
+                        </div>
+                        <div class="section-title">广告图片</div>
+                    </div>
+
+                    <div class="preview-container">
+                        <div class="preview-placeholder" id="image-placeholder">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <p>点击下方按钮上传广告图片</p>
+                        </div>
+                        <img src="" alt="广告图片预览" class="image-preview" id="image-preview">
+                    </div>
+
+                    <div class="upload-container">
+                        <label for="file-upload" class="file-btn">
+                            <i class="fas fa-upload"></i> 上传广告图片
+                        </label>
+                        <input type="file" id="file-upload" accept="image/*">
+                        <p class="note">支持 JPG, PNG 格式，建议尺寸：512×512</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="action-btn-container">
+                <button class="action-btn create-btn" id="create-btn" disabled>
+                    <i class="fas fa-rocket"></i> 创建广告活动
+                </button>
+
+                <div class="status-message" id="status-message"></div>
+
+                <!-- 广告活动创建结果展示 -->
+                <div class="result-section" id="campaign-result" style="display: none;">
+                    <div class="result-title">
+                        <i class="fas fa-check-circle"></i> 广告活动创建成功
+                    </div>
+                    <div class="result-grid">
+                        <div class="result-card">
+                            <div class="card-header">
+                                <i class="fas fa-fingerprint card-icon"></i>
+                                <div class="card-title">活动详情</div>
+                            </div>
+                            <div class="card-content">
+                                <div class="card-item">
+                                    <div class="card-label">活动ID</div>
+                                    <div class="card-value" id="result-campaign-id">-</div>
+                                </div>
+                                <div class="card-item">
+                                    <div class="card-label">活动名称</div>
+                                    <div class="card-value" id="result-campaign-name">-</div>
+                                </div>
+                                <div class="card-item">
+                                    <div class="card-label">平台</div>
+                                    <div class="card-value" id="result-platform">-</div>
+                                </div>
+                                <div class="card-item">
+                                    <div class="card-label">素材MD5</div>
+                                    <div class="card-value" id="result-material-md5">-</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 创意组查询 -->
+        <div class="tab-content" id="creative-search">
+            <div class="creative-search-section">
+                <div class="section-header">
+                    <div class="section-icon">
+                        <i class="fas fa-search"></i>
+                    </div>
+                    <div class="section-title">创意组查询</div>
+                </div>
+
+                <div class="creative-search-header">
+                    <div class="creative-search-icon">
+                        <i class="fas fa-palette"></i>
+                    </div>
+                    <div class="creative-search-title">按名称搜索创意组</div>
+                </div>
+
+                <div class="creative-search-form">
+                    <input type="text" id="creative-set-name" class="creative-search-input" placeholder="输入创意组名称关键词">
+                    <button class="file-btn" id="search-creative-btn">
+                        <i class="fas fa-search"></i> 查询创意组
+                    </button>
+                </div>
+
+                <div class="creative-results-container" id="creative-results-container">
+                    <p style="text-align: center; color: #718096; padding: 20px;">请输入关键词查询创意组</p>
+                </div>
+
+                <div class="selected-item" id="selected-creative-set" style="display: none;">
+                    <div>
+                        <div><strong>已选创意组：</strong><span id="selected-set-name">-</span></div>
+                        <div>ID: <span id="selected-set-id">-</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 广告单元创建 -->
+        <div class="tab-content" id="create-offer">
+            <div class="form-section">
+                <div class="section-header">
+                    <div class="section-icon">
+                        <i class="fas fa-layer-group"></i>
+                    </div>
+                    <div class="section-title">广告单元设置</div>
+                </div>
+
+                <div class="offer-form-row">
+                    <div class="form-group">
+                        <label for="offer-name">
+                            <i class="fas fa-tag"></i> 单元名称
+                        </label>
+                        <input type="text" id="offer-name" placeholder="广告单元名称">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="bid-rate">
+                            <i class="fas fa-dollar-sign"></i> 出价
+                        </label>
+                        <input type="number" id="bid-rate" step="0.01" value="0.1">
+                    </div>
+                </div>
+
+                <div class="offer-form-row">
+                    <div class="form-group">
+                        <label for="target-geo">
+                            <i class="fas fa-globe-americas"></i> 目标地区
+                        </label>
+                        <select id="target-geo">
+                            <option value="US">美国（US）</option>
+                            <option value="CA">加拿大（CA）</option>
+                            <option value="GB">英国（GB）</option>
+                            <option value="AU">澳大利亚（AU）</option>
+                            <option value="JP">日本（JP）</option>
+                            <option value="KR">韩国（KR）</option>
+                            <option value="DE">德国（DE）</option>
+                            <option value="FR">法国（FR）</option>
+                            <option value="ES">西班牙（ES）</option>
+                            <option value="IT">意大利（IT）</option>
+                            <option value="ALL">全部地区</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="billing-type">
+                            <i class="fas fa-file-invoice-dollar"></i> 结算方式
+                        </label>
+                        <select id="billing-type">
+                            <option value="CPI">CPI</option>
+                            <option value="CPM">CPM</option>
+                            <option value="CPC">CPC</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>
+                        <i class="fas fa-project-diagram"></i> 关联信息
+                    </label>
+                    <div class="description">
+                        <p>广告活动：<span id="current-campaign-name">-</span>（ID: <span id="current-campaign-id">-</span>）</p>
+                        <p>创意组：<span id="current-creative-set-name">-</span>（ID: <span id="current-creative-set-id">-</span>）</p>
+                    </div>
+                </div>
+
+                <div class="action-btn-container">
+                    <button class="action-btn offer-btn" id="create-offer-btn" disabled>
+                        <i class="fas fa-plus-circle"></i> 创建广告单元
+                    </button>
+
+                    <div class="status-message" id="offer-status-message"></div>
+
+                    <!-- 广告单元创建结果展示 -->
+                    <div class="result-section" id="offer-result" style="display: none;">
+                        <div class="result-title">
+                            <i class="fas fa-check-circle"></i> 广告单元创建成功
+                        </div>
+                        <div class="result-grid">
+                            <div class="result-card">
+                                <div class="card-header">
+                                    <i class="fas fa-fingerprint card-icon"></i>
+                                    <div class="card-title">广告单元信息</div>
+                                </div>
+                                <div class="card-content">
+                                    <div class="card-item">
+                                        <div class="card-label">单元ID</div>
+                                        <div class="card-value" id="result-offer-id">-</div>
+                                    </div>
+                                    <div class="card-item">
+                                        <div class="card-label">单元名称</div>
+                                        <div class="card-value" id="result-offer-name">-</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="result-card">
+                                <div class="card-header">
+                                    <i class="fas fa-dollar-sign card-icon"></i>
+                                    <div class="card-title">投放信息</div>
+                                </div>
+                                <div class="card-content">
+                                    <div class="card-item">
+                                        <div class="card-label">结算方式</div>
+                                        <div class="card-value" id="result-offer-billing">-</div>
+                                    </div>
+                                    <div class="card-item">
+                                        <div class="card-label">出价</div>
+                                        <div class="card-value" id="result-offer-bid">-</div>
+                                    </div>
+                                    <div class="card-item">
+                                        <div class="card-label">目标地区</div>
+                                        <div class="card-value" id="result-offer-geo">-</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>广告创建系统 &copy; 2025</p>
+        </div>
+    </div>
+
+    <script>
+        // 页面加载后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 标签页切换
+            const tabBtns = document.querySelectorAll('.tab-btn');
+            const tabContents = document.querySelectorAll('.tab-content');
+
+            tabBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const tabId = this.getAttribute('data-tab');
+
+                    // 更新标签按钮状态
+                    tabBtns.forEach(btn => btn.classList.remove('active'));
+                    this.classList.add('active');
+
+                    // 更新标签内容状态
+                    tabContents.forEach(content => {
+                        content.classList.remove('active');
+                        if(content.id === tabId) {
+                            content.classList.add('active');
+                        }
+                    });
+
+                    // 如果切换到广告单元标签，尝试填充数据
+                    if(tabId === 'create-offer') {
+                        populateOfferForm();
+                    }
+                });
+            });
+
+            // 返回日志工具
+            document.getElementById('back-to-log-btn').addEventListener('click', function() {
+                window.location.href = '/index.html';
+            });
+
+            // 图片上传预览
+            document.getElementById('file-upload').addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file && file.type.match('image.*')) {
+                    const reader = new FileReader();
+
+                    reader.onload = function(e) {
+                        const preview = document.getElementById('image-preview');
+                        const placeholder = document.getElementById('image-placeholder');
+
+                        preview.src = e.target.result;
+                        preview.style.display = 'block';
+                        placeholder.style.display = 'none';
+                        document.getElementById('create-btn').disabled = false;
+                    }
+
+                    reader.readAsDataURL(file);
+                } else {
+                    document.getElementById('create-btn').disabled = true;
+                }
+            });
+
+            // 验证表单启用创建按钮
+            const campaignNameInput = document.getElementById('campaign-name');
+            const previewUrlInput = document.getElementById('preview-url');
+            const platformSelect = document.getElementById('platform');
+
+            const validateForm = () => {
+                const isValid = campaignNameInput.value.trim() !== '' &&
+                               previewUrlInput.value.trim() !== '' &&
+                               platformSelect.value !== '' &&
+                               document.getElementById('file-upload').files.length > 0;
+
+                document.getElementById('create-btn').disabled = !isValid;
+            };
+
+            campaignNameInput.addEventListener('input', validateForm);
+            previewUrlInput.addEventListener('input', validateForm);
+            platformSelect.addEventListener('change', validateForm);
+
+            // 广告查询
+            document.getElementById('search-campaign-btn').addEventListener('click', async function() {
+                const searchTerm = document.getElementById('campaign-search-input').value.trim();
+
+                if (!searchTerm) {
+                    showStatus('请输入查询关键词', 'error');
+                    return;
+                }
+
+                try {
+                    // 显示加载状态
+                    const searchBtn = document.getElementById('search-campaign-btn');
+                    searchBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 查询中...';
+                    searchBtn.disabled = true;
+
+                    // 调用广告查询API
+                    const response = await fetch(`/api/search_campaigns?search=${encodeURIComponent(searchTerm)}`);
+                    const result = await response.json();
+
+                    // 恢复按钮状态
+                    searchBtn.innerHTML = '<i class="fas fa-search"></i> 查询广告';
+                    searchBtn.disabled = false;
+
+                    if (result.code === 200) {
+                        // 显示查询结果
+                        const resultsContainer = document.getElementById('campaign-results-container');
+                        resultsContainer.innerHTML = '';
+
+                        if (result.data.campaigns.length === 0) {
+                            resultsContainer.innerHTML = '<p style="text-align: center; padding: 20px;">未找到匹配的广告</p>';
+                            document.getElementById('selected-campaign').style.display = 'none';
+                        } else {
+                            result.data.campaigns.forEach(campaign => {
+                                const item = document.createElement('div');
+                                item.className = 'campaign-result-item';
+                                item.innerHTML = `
+                                    <div class="campaign-result-header">
+                                        <div class="campaign-result-id">ID: ${campaign.campaign_id}</div>
+                                        <div class="campaign-result-name">${campaign.campaign_name}</div>
+                                    </div>
+                                    <div class="campaign-result-details">
+                                        <div class="campaign-result-row">
+                                            <span class="campaign-result-label">平台:</span>
+                                            <span>${campaign.platform}</span>
+                                        </div>
+                                        <div class="campaign-result-row">
+                                            <span class="campaign-result-label">产品:</span>
+                                            <span>${campaign.product_name}</span>
+                                        </div>
+                                        <div class="campaign-result-row">
+                                            <span class="campaign-result-label">预览URL:</span>
+                                            <span>${campaign.preview_url}</span>
+                                        </div>
+                                        <div class="campaign-result-row">
+                                            <span class="campaign-result-label">状态:</span>
+                                            <span>${campaign.status}</span>
+                                        </div>
+                                    </div>
+                                `;
+
+                                item.addEventListener('click', function() {
+                                    // 移除之前的选择
+                                    document.querySelectorAll('.campaign-result-item').forEach(el => {
+                                        el.classList.remove('selected');
+                                    });
+
+                                    // 标记当前选择
+                                    this.classList.add('selected');
+
+                                    // 显示选中信息
+                                    document.getElementById('selected-campaign-id').textContent = campaign.campaign_id;
+                                    document.getElementById('selected-campaign-name').textContent = campaign.campaign_name;
+                                    document.getElementById('selected-campaign').style.display = 'flex';
+                                });
+
+                                resultsContainer.appendChild(item);
+                            });
+                        }
+                    } else {
+                        showStatus(`查询失败: ${result.msg}`, 'error');
+                    }
+                } catch (error) {
+                    // 恢复按钮状态
+                    const searchBtn = document.getElementById('search-campaign-btn');
+                    searchBtn.innerHTML = '<i class="fas fa-search"></i> 查询广告';
+                    searchBtn.disabled = false;
+
+                    // 错误处理
+                    showStatus(`查询失败: ${error.message}`, 'error');
+                }
+            });
+
+            // 使用选中的广告创建广告单元
+            document.getElementById('use-for-offer-btn').addEventListener('click', function() {
+                const campaignId = document.getElementById('selected-campaign-id').textContent;
+                const campaignName = document.getElementById('selected-campaign-name').textContent;
+
+                // 填充广告单元创建页的广告活动信息
+                document.getElementById('current-campaign-id').textContent = campaignId;
+                document.getElementById('current-campaign-name').textContent = campaignName;
+
+                // 切换到广告单元创建标签页
+                document.querySelector('[data-tab="create-offer"]').click();
+
+                // 显示提示信息
+                showStatus(`已使用广告 "${campaignName}" 的信息填充表单`, 'info');
+            });
+
+            // 创建广告
+            document.getElementById('create-btn').addEventListener('click', async function() {
+                const campaignName = document.getElementById('campaign-name').value.trim();
+                const previewUrl = document.getElementById('preview-url').value.trim();
+                const platform = document.getElementById('platform').value;
+                const fileInput = document.getElementById('file-upload');
+
+                try {
+                    // 显示加载状态
+                    const createBtn = document.getElementById('create-btn');
+                    createBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 创建中...';
+                    createBtn.disabled = true;
+
+                    // 准备表单数据（包含文件）
+                    const formData = new FormData();
+                    formData.append('campaign_name', campaignName);
+                    formData.append('preview_url', previewUrl);
+                    formData.append('platform', platform);
+                    formData.append('file', fileInput.files[0]);
+
+                    // 发送创建广告请求
+                    const response = await fetch('/api/create_campaign_with_creative', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const result = await response.json();
+
+                    if (response.ok && result.code === 200) {
+                        // 成功响应
+                        showStatus('广告活动创建成功！', 'success');
+
+                        // 显示广告活动创建结果
+                        document.getElementById('campaign-result').style.display = 'block';
+                        document.getElementById('result-campaign-id').textContent = result.data.campaign_id;
+                        document.getElementById('result-campaign-name').textContent = campaignName;
+                        document.getElementById('result-platform').textContent = platform === 'ANDROID' ? '安卓' : 'iOS';
+                        document.getElementById('result-material-md5').textContent = result.data.creative_md5;
+
+                        // 填充广告单元创建页的广告活动信息
+                        document.getElementById('current-campaign-id').textContent = result.data.campaign_id;
+                        document.getElementById('current-campaign-name').textContent = campaignName;
+
+                        // 填充创意组搜索框
+                        const keyword = extractKeywordFromName(campaignName);
+                        if(keyword) {
+                            document.getElementById('creative-set-name').value = keyword;
+                        }
+                    } else {
+                        const errorMsg = result.msg || '广告创建失败，请重试';
+                        showStatus(`错误: ${errorMsg}`, 'error');
+                    }
+                } catch (error) {
+                    // 错误处理
+                    showStatus(`网络错误: ${error.message}`, 'error');
+                } finally {
+                    // 恢复按钮状态
+                    const createBtn = document.getElementById('create-btn');
+                    createBtn.innerHTML = '<i class="fas fa-rocket"></i> 创建广告活动';
+                    createBtn.disabled = false;
+                }
+            });
+
+            // 查询创意组
+            document.getElementById('search-creative-btn').addEventListener('click', async function() {
+                const creativeSetName = document.getElementById('creative-set-name').value.trim();
+
+                if (!creativeSetName) {
+                    showStatus('请输入创意组名称', 'error');
+                    return;
+                }
+
+                try {
+                    // 显示加载状态
+                    const searchBtn = document.getElementById('search-creative-btn');
+                    searchBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 查询中...';
+                    searchBtn.disabled = true;
+
+                    // 调用创意组查询API
+                    const response = await fetch(`/api/get_creative_sets?creative_set_name=${encodeURIComponent(creativeSetName)}`);
+                    const result = await response.json();
+
+                    // 恢复按钮状态
+                    searchBtn.innerHTML = '<i class="fas fa-search"></i> 查询创意组';
+                    searchBtn.disabled = false;
+
+                    if (result.code === 200) {
+                        // 显示查询结果
+                        const resultsContainer = document.getElementById('creative-results-container');
+                        resultsContainer.innerHTML = '';
+
+                        if (result.data.creative_sets.length === 0) {
+                            resultsContainer.innerHTML = '<p style="text-align: center; padding: 20px;">未找到匹配的创意组</p>';
+                            document.getElementById('selected-creative-set').style.display = 'none';
+                        } else {
+                            result.data.creative_sets.forEach(creativeSet => {
+                                const item = document.createElement('div');
+                                item.className = 'creative-result-item';
+                                item.innerHTML = `
+                                    <div class="creative-result-header">
+                                        <div class="creative-result-id">ID: ${creativeSet.creative_set_id}</div>
+                                        <div class="creative-result-name">${creativeSet.creative_set_name}</div>
+                                    </div>
+                                    <div class="creative-result-details">
+                                        <div>素材数量: ${creativeSet.material_count}</div>
+                                        <div>广告组名称: ${creativeSet.campaign_name}</div>
+
+                                    </div>
+                                `;
+
+                                item.addEventListener('click', function() {
+                                    // 移除之前的选择
+                                    document.querySelectorAll('.creative-result-item').forEach(el => {
+                                        el.classList.remove('selected');
+                                    });
+
+                                    // 标记当前选择
+                                    this.classList.add('selected');
+
+                                    // 显示选中信息
+                                    document.getElementById('selected-set-id').textContent = creativeSet.creative_set_id;
+                                    document.getElementById('selected-set-name').textContent = creativeSet.creative_set_name;
+                                    document.getElementById('selected-creative-set').style.display = 'block';
+
+                                    // 填充广告单元创建页的创意组信息
+                                    document.getElementById('current-creative-set-id').textContent = creativeSet.creative_set_id;
+                                    document.getElementById('current-creative-set-name').textContent = creativeSet.creative_set_name;
+
+                                    // 启用广告单元创建按钮
+                                    document.getElementById('create-offer-btn').disabled = false;
+                                });
+
+                                resultsContainer.appendChild(item);
+                            });
+                        }
+                    } else {
+                        showStatus(`查询失败: ${result.msg}`, 'error');
+                    }
+                } catch (error) {
+                    // 恢复按钮状态
+                    const searchBtn = document.getElementById('search-creative-btn');
+                    searchBtn.innerHTML = '<i class="fas fa-search"></i> 查询创意组';
+                    searchBtn.disabled = false;
+
+                    // 错误处理
+                    showStatus(`查询失败: ${error.message}`, 'error');
+                }
+            });
+
+            // 创建广告单元
+            document.getElementById('create-offer-btn').addEventListener('click', async function() {
+                const campaignId = document.getElementById('current-campaign-id').textContent;
+                const creativeSetId = document.getElementById('current-creative-set-id').textContent;
+                const offerName = document.getElementById('offer-name').value.trim();
+                const bidRate = document.getElementById('bid-rate').value;
+                const targetGeo = document.getElementById('target-geo').value;
+                const billingType = document.getElementById('billing-type').value;
+
+                if (!offerName) {
+                    showOfferStatus('请输入广告单元名称', 'error');
+                    return;
+                }
+
+                if (campaignId === '-' || creativeSetId === '-') {
+                    showOfferStatus('请先完成广告活动和创意组选择', 'error');
+                    return;
+                }
+
+                try {
+                    // 显示加载状态
+                    const createBtn = document.getElementById('create-offer-btn');
+                    createBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 创建中...';
+                    createBtn.disabled = true;
+
+                    // 准备请求数据 - 修复API要求的字段
+                    const requestData = {
+                        campaign_id: campaignId,
+                        creative_set_id: creativeSetId,
+                        offer_name: offerName,
+                        bid_rate: parseFloat(bidRate),
+                        target_geo: targetGeo,
+                        billing_type: billingType,
+                        // 添加API要求的字段
+                        creative_sets: [{
+                            creative_set_id: creativeSetId,
+                            creative_set_name: document.getElementById('current-creative-set-name').textContent,
+                            // 这里需要从创意组查询结果中获取实际值
+                            ad_outputs: [111], // 示例值，实际应从创意组数据获取
+                            creatives: [
+                                {creative_md5: "example_md5_1"},
+                                {creative_md5: "example_md5_2"}
+                            ]
+                        }]
+                    };
+
+                    // 发送创建广告单元请求
+                    const response = await fetch('/api/create_offer', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(requestData)
+                    });
+
+                    const result = await response.json();
+
+                    if (result.code === 200) {
+                        // 显示成功状态
+                        showOfferStatus('广告单元创建成功！', 'success');
+
+                        // 显示广告单元创建结果
+                        document.getElementById('offer-result').style.display = 'block';
+                        document.getElementById('result-offer-id').textContent = result.data.offer_id;
+                        document.getElementById('result-offer-name').textContent = offerName;
+                        document.getElementById('result-offer-billing').textContent =
+                            document.querySelector('#billing-type option:checked').textContent;
+                        document.getElementById('result-offer-bid').textContent = bidRate +
+                            (billingType === 'CPM' ? ' (每千次展示成本)' : ' (每次安装成本)');
+                        document.getElementById('result-offer-geo').textContent =
+                            document.querySelector('#target-geo option:checked').textContent;
+                    } else {
+                        const errorMsg = result.msg || '广告单元创建失败，请重试';
+                        showOfferStatus(`错误: ${errorMsg}`, 'error');
+                    }
+                } catch (error) {
+                    showOfferStatus(`网络错误: ${error.message}`, 'error');
+                } finally {
+                    // 恢复按钮状态
+                    const createBtn = document.getElementById('create-offer-btn');
+                    createBtn.innerHTML = '<i class="fas fa-plus-circle"></i> 创建广告单元';
+                    createBtn.disabled = false;
+                }
+            });
+
+            // 填充广告单元表单
+            function populateOfferForm() {
+                const campaignId = document.getElementById('result-campaign-id')?.textContent;
+                const creativeSetId = document.getElementById('selected-set-id')?.textContent;
+
+                if(campaignId && campaignId !== '-') {
+                    document.getElementById('current-campaign-id').textContent = campaignId;
+                    document.getElementById('current-campaign-name').textContent =
+                        document.getElementById('result-campaign-name')?.textContent || 'N/A';
+                }
+
+                if(creativeSetId && creativeSetId !== '-') {
+                    document.getElementById('current-creative-set-id').textContent = creativeSetId;
+                    document.getElementById('current-creative-set-name').textContent =
+                        document.getElementById('selected-set-name')?.textContent || 'N/A';
+                    document.getElementById('create-offer-btn').disabled = false;
+                }
+            }
+
+            // 从广告名称提取关键字
+            function extractKeywordFromName(name) {
+                const pattern = /([a-zA-Z]+\d+[a-zA-Z]?)/;
+                const matches = name.match(pattern);
+                return matches ? matches[0] : null;
+            }
+
+            // 显示广告活动状态
+            function showStatus(message, type) {
+                const statusMessage = document.getElementById('status-message');
+                statusMessage.textContent = message;
+                statusMessage.className = 'status-message ' + type;
+            }
+
+            // 显示广告单元状态
+            function showOfferStatus(message, type) {
+                const statusMessage = document.getElementById('offer-status-message');
+                statusMessage.textContent = message;
+                statusMessage.className = 'status-message ' + type;
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>广告单元管理系统</title>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4edf9 100%);
+            color: #2c3e50;
+            min-height: 100vh;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 35px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #4361ee 0%, #3a0ca3 100%);
+            color: white;
+            padding: 25px 40px;
+            text-align: center;
+            position: relative;
+        }
+
+        .nav-button {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            color: white;
+            padding: 10px 20px;
+            width: 160px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .nav-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .subtitle {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+
+        .content-section {
+            padding: 30px 40px;
+        }
+
+        .section-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #4361ee;
+            display: flex;
+            align-items: center;
+        }
+
+        .section-title i {
+            margin-right: 12px;
+            color: #4361ee;
+            font-size: 24px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #4a5568;
+            font-size: 16px;
+        }
+
+        input, select, textarea, button {
+            width: 100%;
+            padding: 14px;
+            border: 1px solid #ced4da;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s;
+            background: #f8f9fa;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #4361ee;
+            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.15);
+            background: white;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #4361ee 0%, #3a56d4 100%);
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            box-shadow: 0 4px 12px rgba(67, 97, 238, 0.3);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(67, 97, 238, 0.35);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #20c997 0%, #0d9488 100%);
+        }
+
+        .results-container {
+            margin-top: 25px;
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 25px;
+            border: 1px solid #e2e8f0;
+            display: none;
+        }
+
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .detail-item {
+            margin-bottom: 15px;
+        }
+
+        .detail-label {
+            font-weight: 600;
+            color: #4a5568;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+
+        .detail-value {
+            padding: 10px;
+            background: #f8fafc;
+            border-radius: 6px;
+            font-size: 14px;
+            min-height: 40px;
+            border: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+        }
+
+        .status-tag {
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-block;
+        }
+
+        .status-running {
+            background: rgba(32, 201, 151, 0.15);
+            color: #0d8a66;
+        }
+
+        .status-pending {
+            background: rgba(255, 193, 7, 0.15);
+            color: #b38700;
+        }
+
+        .status-stopped {
+            background: rgba(220, 53, 69, 0.15);
+            color: #b02a37;
+        }
+
+        .mtgid-section {
+            margin-top: 30px;
+        }
+
+        .mtgid-container {
+            background: #f8f9fa;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 15px;
+        }
+
+        .mtgid-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .mtgid-title {
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 18px;
+        }
+
+        .mtgid-count {
+            background: #4361ee;
+            color: white;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .mtgid-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        .mtgid-tag {
+            background: rgba(67, 97, 238, 0.1);
+            color: #4361ee;
+            padding: 5px 12px;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .traffic-management {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .additional-input {
+            margin-top: 20px;
+        }
+
+        .additional-label {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #4a5568;
+        }
+
+        .additional-label i {
+            margin-right: 8px;
+            color: #4361ee;
+        }
+
+        .input-hint {
+            font-size: 12px;
+            color: #718096;
+            margin-top: 5px;
+        }
+
+        .response-message {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: 500;
+            display: none;
+        }
+
+        .success-message {
+            background: rgba(32, 201, 151, 0.1);
+            color: #0d8a66;
+            border: 1px solid rgba(32, 201, 151, 0.2);
+            display: block;
+        }
+
+        .error-message {
+            background: rgba(220, 53, 69, 0.1);
+            color: #b02a37;
+            border: 1px solid rgba(220, 53, 69, 0.2);
+            display: block;
+        }
+
+        .response-details {
+            margin-top: 15px;
+            padding: 15px;
+            background: #f8fafc;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            display: none;
+        }
+
+        .response-detail-item {
+            display: flex;
+            margin-bottom: 8px;
+        }
+
+        .response-label {
+            font-weight: 600;
+            color: #4a5568;
+            min-width: 150px;
+        }
+
+        .update-bid-section {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .bid-input-container {
+            margin-top: 20px;
+        }
+
+        .bid-input-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .bid-input-title {
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 18px;
+        }
+
+        .bid-input-hint {
+            font-size: 14px;
+            color: #718096;
+            margin-top: 5px;
+        }
+
+        .bid-table-container {
+            margin-top: 15px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .bid-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .bid-table th {
+            background: #f0f5ff;
+            padding: 12px 15px;
+            text-align: left;
+            font-weight: 600;
+            color: #2c3e50;
+            border-bottom: 2px solid #d6e0ff;
+        }
+
+        .bid-table td {
+            padding: 10px 15px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .bid-table tr:nth-child(even) {
+            background-color: #f8fafc;
+        }
+
+        .bid-table input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            background: white;
+        }
+
+        .add-bid-row-btn {
+            margin-top: 10px;
+            padding: 8px 15px;
+            background: rgba(67, 97, 238, 0.1);
+            color: #4361ee;
+            border: 1px solid rgba(67, 97, 238, 0.2);
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .add-bid-row-btn:hover {
+            background: rgba(67, 97, 238, 0.2);
+        }
+
+        .remove-bid-row-btn {
+            color: #dc3545;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 18px;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 25px;
+            color: #718096;
+            font-size: 14px;
+            border-top: 1px solid #e2e8f0;
+            background: #f8faff;
+        }
+
+        @media (max-width: 768px) {
+            .content-section {
+                padding: 20px;
+            }
+
+            .detail-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .mtgid-list {
+                max-height: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <button class="nav-button" id="back-btn">
+                <i class="fas fa-arrow-left"></i>
+                <span>返回</span>
+            </button>
+            <h1>广告单元管理系统</h1>
+            <div class="subtitle">专业的广告单元管理与流量控制工具</div>
+        </header>
+
+        <div class="content-section">
+            <div class="section-title">
+                <i class="fas fa-search"></i>
+                <h2>广告单元查询</h2>
+            </div>
+
+            <div class="form-group">
+                <label for="offer-name">广告单元名称</label>
+                <input type="text" id="offer-name" placeholder="输入完整的广告单元名称">
+            </div>
+
+            <button class="btn" id="search-btn">
+                <i class="fas fa-search"></i> 查询广告单元
+            </button>
+
+            <div class="results-container" id="results-container">
+                <div class="section-title">
+                    <i class="fas fa-info-circle"></i>
+                    <h2>广告单元详情</h2>
+                </div>
+
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <div class="detail-label">广告组名称</div>
+                        <div class="detail-value" id="detail-campaign-name">-</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">广告单元名称</div>
+                        <div class="detail-value" id="detail-offer-name">-</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">广告单元ID</div>
+                        <div class="detail-value" id="detail-offer-id">-</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">状态</div>
+                        <div class="detail-value" id="detail-status">-</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">默认出价</div>
+                        <div class="detail-value" id="detail-bid-rate">-</div>
+                    </div>
+                </div>
+
+                <div class="mtgid-section">
+                    <div class="section-title">
+                        <i class="fas fa-list"></i>
+                        <h2>流量ID列表</h2>
+                    </div>
+
+                    <!-- 目标应用流量ID -->
+                    <div class="mtgid-container">
+                        <div class="mtgid-header">
+                            <div class="mtgid-title">广告已屏蔽流量ID</div>
+                            <div class="mtgid-count" id="target-app-count">0</div>
+                        </div>
+                        <div class="mtgid-list" id="target-app-mtgids">
+                            <!-- 目标应用流量ID将在这里动态生成 -->
+                        </div>
+                    </div>
+
+                    <!-- 出价流量ID -->
+                    <div class="mtgid-container">
+                        <div class="mtgid-header">
+                            <div class="mtgid-title">出价流量ID</div>
+                            <div class="mtgid-count" id="bid-mtgid-count">0</div>
+                        </div>
+                        <div class="mtgid-list" id="bid-mtgids">
+                            <!-- 出价流量ID将在这里动态生成 -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="traffic-management">
+                    <div class="section-title">
+                        <i class="fas fa-traffic-light"></i>
+                        <h2>流量管理</h2>
+                    </div>
+
+                    <div class="additional-input">
+                        <div class="additional-label">
+                            <i class="fas fa-plus-circle"></i>
+                            <span>额外流量ID（可选）</span>
+                        </div>
+                        <textarea id="additional-mtgids" placeholder="输入要额外添加的流量ID，多个用逗号分隔或每行一个"></textarea>
+                        <div class="input-hint">可输入多个流量ID，用逗号、空格或换行分隔</div>
+                    </div>
+
+                    <button class="btn" id="add-blacklist-btn">
+                        <i class="fas fa-ban"></i> 添加到黑名单
+                    </button>
+
+                    <div class="response-message" id="response-message"></div>
+
+                    <div class="response-details" id="response-details" style="display: none;">
+                        <div class="response-detail-item">
+                            <div class="response-label">已屏蔽流量ID数量:</div>
+                            <div id="response-fixed-count">0</div>
+                        </div>
+                        <div class="response-detail-item">
+                            <div class="response-label">新增流量ID数量:</div>
+                            <div id="response-additional-count">0</div>
+                        </div>
+                        <div class="response-detail-item">
+                            <div class="response-label">总流量ID数量:</div>
+                            <div id="response-total-count">0</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="update-bid-section">
+                    <div class="section-title">
+                        <i class="fas fa-dollar-sign"></i>
+                        <h2>更新出价</h2>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="default-bid">默认出价</label>
+                        <input type="number" step="0.001" min="0.001" id="default-bid" placeholder="输入默认出价">
+                    </div>
+
+                    <div class="bid-input-container">
+                        <div class="bid-input-header">
+                            <div class="bid-input-title">流量ID出价设置</div>
+
+                        </div>
+                        <div class="bid-input-hint">
+                            为特定流量ID设置出价
+                        </div>
+
+                        <div class="bid-table-container">
+                            <table class="bid-table" id="bid-table">
+                                <thead>
+                                    <tr>
+                                        <th>流量ID</th>
+                                        <th>出价</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="bid-table-body">
+                                    <tr>
+                                        <td><input type="text" class="bid-mtgid" placeholder="输入流量ID"></td>
+                                        <td><input type="number" step="0.001" min="0.001" class="bid-rate" placeholder="输入出价"></td>
+                                        <td><button class="remove-bid-row-btn"><i class="fas fa-trash"></i></button></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <button class="add-bid-row-btn" id="add-bid-row-btn">
+                            <i class="fas fa-plus"></i> 添加一行
+                        </button>
+                    </div>
+
+                    <button class="btn" id="update-bid-btn">
+                        <i class="fas fa-sync-alt"></i> 更新出价
+                    </button>
+
+                    <div class="response-message" id="update-bid-response"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>广告单元管理系统 v1.0 &copy; 2025 | 专业的广告单元管理解决方案</p>
+        </div>
+    </div>
+
+    <script>
+        // 固定MTGID列表
+        const FIXED_MTGIDS = [
+            "mtg1188060113", "mtg1429606784", "mtg1110245396", "mtg1149594234",
+            "mtg1472241658", "mtg1208507563", "mtg1794250043", "mtg1728885103",
+            "mtg1881650751", "mtg1193343700", "mtg1382767364", "mtg1359950025",
+            "mtg1233420545", "mtg1147857917"
+        ];
+
+        // 初始化函数
+        function init() {
+            // 返回按钮
+            document.getElementById('back-btn').addEventListener('click', function() {
+                window.history.back();
+            });
+
+            // 查询按钮
+            document.getElementById('search-btn').addEventListener('click', searchOffer);
+
+            // 添加到黑名单按钮
+            document.getElementById('add-blacklist-btn').addEventListener('click', addToBlacklist);
+
+            // 添加出价行按钮
+            document.getElementById('add-bid-row-btn').addEventListener('click', addBidRow);
+
+            // 更新出价按钮
+            document.getElementById('update-bid-btn').addEventListener('click', updateBidRate);
+
+            // 为初始行添加删除事件
+            document.querySelector('.remove-bid-row-btn').addEventListener('click', function() {
+                this.closest('tr').remove();
+            });
+        }
+
+        // 添加出价行
+        function addBidRow() {
+            const tableBody = document.getElementById('bid-table-body');
+            const newRow = document.createElement('tr');
+            newRow.innerHTML = `
+                <td><input type="text" class="bid-mtgid" placeholder="输入流量ID"></td>
+                <td><input type="number" step="0.001" min="0.001" class="bid-rate" placeholder="输入出价"></td>
+                <td><button class="remove-bid-row-btn"><i class="fas fa-trash"></i></button></td>
+            `;
+            tableBody.appendChild(newRow);
+
+            // 为新行的删除按钮添加事件
+            newRow.querySelector('.remove-bid-row-btn').addEventListener('click', function() {
+                this.closest('tr').remove();
+            });
+        }
+
+        // 查询广告单元
+        async function searchOffer() {
+            const offerName = document.getElementById('offer-name').value.trim();
+            if (!offerName) {
+                alert('请输入广告单元名称');
+                return;
+            }
+
+            try {
+                // 在实际应用中，这里会调用后端API
+                const response = await axios.get('/api/get_offer_by_name', {
+                    params: { offer_name: offerName }
+                });
+
+                if (response.data.code === 200) {
+                    displayOfferDetails(response.data.data);
+                } else {
+                    alert(response.data.msg || '查询失败');
+                }
+            } catch (error) {
+                alert('查询失败');
+            }
+        }
+
+        // 显示广告单元详情
+        function displayOfferDetails(data) {
+            // 基本详情
+            document.getElementById('detail-campaign-name').textContent = data.campaign_name || '-';
+            document.getElementById('detail-offer-name').textContent = data.offer_name || '-';
+            document.getElementById('detail-offer-id').textContent = data.offer_id || '-';
+            document.getElementById('detail-bid-rate').textContent = data.bid_rate || '-';
+
+            // 状态显示
+            let statusText = '';
+            switch(data.status) {
+                case 'RUNNING':
+                    statusText = '<span class="status-tag status-running">运行中</span>';
+                    break;
+                case 'PENDING':
+                    statusText = '<span class="status-tag status-pending">暂停</span>';
+                    break;
+                case 'STOPPED':
+                    statusText = '<span class="status-tag status-stopped">停止</span>';
+                    break;
+                default:
+                    statusText = data.status;
+            }
+            document.getElementById('detail-status').innerHTML = statusText;
+
+            // 目标应用流量ID
+            const targetAppContainer = document.getElementById('target-app-mtgids');
+            targetAppContainer.innerHTML = '';
+
+            let targetAppCount = 0;
+            if (data.target_app && data.target_app.mtg_id) {
+                targetAppCount = data.target_app.mtg_id.length;
+                data.target_app.mtg_id.forEach(mtgid => {
+                    const tag = document.createElement('div');
+                    tag.className = 'mtgid-tag';
+                    tag.textContent = mtgid;
+                    targetAppContainer.appendChild(tag);
+                });
+            }
+            document.getElementById('target-app-count').textContent = targetAppCount;
+
+            // 出价流量ID
+            const bidMtgidContainer = document.getElementById('bid-mtgids');
+            bidMtgidContainer.innerHTML = '';
+
+            let bidMtgidCount = 0;
+            if (data.bid_rate_by_mtgid) {
+                bidMtgidCount = data.bid_rate_by_mtgid.length;
+                data.bid_rate_by_mtgid.forEach(item => {
+                    const tag = document.createElement('div');
+                    tag.className = 'mtgid-tag';
+                    tag.textContent = item.mtgid + `--出价$${item.bid_rate}`;
+                    bidMtgidContainer.appendChild(tag);
+                });
+            }
+            document.getElementById('bid-mtgid-count').textContent = bidMtgidCount;
+
+            // 设置默认出价
+            document.getElementById('default-bid').value = data.bid_rate || '';
+
+            // 显示详情区域
+            document.getElementById('results-container').style.display = 'block';
+        }
+
+        // 添加到黑名单
+        async function addToBlacklist() {
+            const offerId = document.getElementById('detail-offer-id').textContent;
+            const additionalMtgids = document.getElementById('additional-mtgids').value.trim();
+
+            if (!offerId || offerId === '-') {
+                showResponse('请先查询广告单元', 'error', 'response-message');
+                return;
+            }
+
+            try {
+                // 处理多种分隔符
+                let additionalList = [];
+                if (additionalMtgids) {
+                    // 支持逗号、空格、换行分隔
+                    additionalList = additionalMtgids.split(/[\s,\n]+/)
+                        .map(id => id.trim())
+                        .filter(id => id);
+                }
+
+                const response = await axios.post('/api/add_to_blacklist', {
+                    offer_id: offerId,
+                    additional_mtgids: additionalList.join(',')
+                });
+
+                if (response.data.code === 200) {
+                    showResponse('流量成功添加到黑名单', 'success', 'response-message');
+                    showResponseDetails(response.data);
+                    // 清空输入框
+                    document.getElementById('additional-mtgids').value = '';
+                } else {
+                    showResponse(response.data.msg || '添加黑名单失败', 'error', 'response-message');
+                }
+            } catch (error) {
+                showResponse('添加黑名单失败', 'error', 'response-message');
+            }
+        }
+
+        // 更新出价
+        async function updateBidRate() {
+            const offerId = document.getElementById('detail-offer-id').textContent;
+            const defaultBid = document.getElementById('default-bid').value.trim();
+
+            if (!offerId || offerId === '-') {
+                showResponse('请先查询广告单元', 'error', 'update-bid-response');
+                return;
+            }
+
+            // 收集出价设置
+            const bidRateByMtgid = [];
+            const bidRows = document.querySelectorAll('#bid-table-body tr');
+
+            for (const row of bidRows) {
+                const mtgid = row.querySelector('.bid-mtgid').value.trim();
+                const bidRate = row.querySelector('.bid-rate').value.trim();
+
+                if (mtgid && bidRate) {
+                    bidRateByMtgid.push({
+                        country_code: "US", // 固定国家代码为US
+                        mtgid: mtgid,
+                        bid_rate: parseFloat(bidRate)
+                    });
+                }
+            }
+
+            if (!defaultBid && bidRateByMtgid.length === 0) {
+                showResponse('请提供默认出价或流量ID出价', 'error', 'update-bid-response');
+                return;
+            }
+
+            try {
+                const response = await axios.post('/api/update_bid_rate', {
+                    offer_id: offerId,
+                    bid_rate: defaultBid ? parseFloat(defaultBid) : null,
+                    bid_rate_by_mtgid: bidRateByMtgid
+                });
+
+                if (response.data.code === 200) {
+                    showResponse('出价更新成功', 'success', 'update-bid-response');
+                } else {
+                    showResponse(response.data.msg || '出价更新失败', 'error', 'update-bid-response');
+                }
+            } catch (error) {
+                showResponse('出价更新失败', 'error', 'update-bid-response');
+            }
+        }
+
+        // 显示响应消息
+        function showResponse(message, type, containerId) {
+            const responseEl = document.getElementById(containerId);
+            responseEl.textContent = message;
+            responseEl.className = 'response-message';
+
+            if (type === 'success') {
+                responseEl.classList.add('success-message');
+            } else if (type === 'error') {
+                responseEl.classList.add('error-message');
+            }
+        }
+
+        // 显示响应详情
+        function showResponseDetails(data) {
+            const detailsEl = document.getElementById('response-details');
+            detailsEl.style.display = 'block';
+
+            document.getElementById('response-fixed-count').textContent = data.fixed_count || FIXED_MTGIDS.length;
+            document.getElementById('response-additional-count').textContent = data.additional_count || 0;
+            document.getElementById('response-total-count').textContent = data.total_count || FIXED_MTGIDS.length;
+        }
+
+        // 页面加载完成后初始化
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

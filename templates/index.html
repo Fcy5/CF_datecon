@@ -1,0 +1,1494 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ClickFlare 日志工具</title>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* 完整的CSS样式 */
+        :root {
+            --primary-color: #4361ee;
+            --primary-dark: #3a0ca3;
+            --secondary-color: #4a5568;
+            --success-color: #20c997;
+            --success-dark: #0d9488;
+            --warning-color: #ffa726;
+            --danger-color: #ef476f;
+            --light-bg: #f8f9fa;
+            --dark-text: #2c3e50;
+            --light-text: #718096;
+            --border-color: #e2e8f0;
+            --shadow: 0 10px 35px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+        }
+
+        .section-tabs {
+            display: flex;
+            margin: 25px 0;
+            border-bottom: 2px solid var(--border-color);
+            background: #f8fafc;
+            border-radius: 12px 12px 0 0;
+            padding: 0 15px;
+        }
+
+        .section-tab {
+            padding: 15px 25px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            font-weight: 600;
+            color: var(--light-text);
+            transition: var(--transition);
+            position: relative;
+        }
+
+        .section-tab.active {
+            border-bottom-color: var(--primary-color);
+            color: var(--primary-color);
+            background: white;
+            border-radius: 8px 8px 0 0;
+        }
+
+        .section-tab:hover:not(.active) {
+            color: var(--primary-color);
+            background: rgba(67, 97, 238, 0.05);
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .sort-controls {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 25px;
+            align-items: center;
+            padding: 20px;
+            background: #f0f5ff;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+
+        .sort-controls select {
+            width: auto;
+            min-width: 180px;
+            background: white;
+            border: 1px solid var(--border-color);
+        }
+
+        .filter-controls {
+            margin-bottom: 25px;
+            padding: 25px;
+            background: #f0f5ff;
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+
+        .filter-controls h3 {
+            margin-bottom: 20px;
+            color: var(--dark-text);
+            font-weight: 700;
+            font-size: 20px;
+        }
+
+        .filter-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .filter-grid .form-group {
+            margin-bottom: 0;
+        }
+
+        .filter-grid label {
+            font-size: 14px;
+            margin-bottom: 8px;
+            color: var(--secondary-color);
+        }
+
+        .filter-grid input,
+        .filter-grid select {
+            padding: 14px;
+            font-size: 15px;
+            border-radius: 10px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4edf9 100%);
+            color: var(--dark-text);
+            min-height: 100vh;
+            padding: 25px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 30px 40px;
+            text-align: center;
+            position: relative;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+
+
+        .nav-button {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            color: white;
+            padding: 12px 22px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 160px;
+        }
+
+        .nav-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .unit-button {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            color: white;
+            padding: 12px 22px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 180px;
+        }
+
+        .unit-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        h1 {
+            font-size: 32px;
+            margin-bottom: 12px;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            font-size: 18px;
+            opacity: 0.9;
+        }
+
+        .content-section {
+            padding: 35px 40px;
+        }
+
+        .section-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--dark-text);
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid var(--primary-color);
+            display: flex;
+            align-items: center;
+        }
+
+        .section-title i {
+            margin-right: 15px;
+            color: var(--primary-color);
+            font-size: 28px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+            position: relative;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: var(--secondary-color);
+            font-size: 16px;
+            transition: var(--transition);
+        }
+
+        input,
+        select,
+        textarea,
+        button {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            font-size: 16px;
+            transition: var(--transition);
+            background: var(--light-bg);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+            position: relative;
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 4px rgba(67, 97, 238, 0.2);
+            background: white;
+            transform: translateY(-2px);
+        }
+
+        .date-range {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+            margin-bottom: 25px;
+        }
+
+        .timezone-group {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 20px;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: var(--secondary-color);
+            font-size: 16px;
+            transition: var(--transition);
+        }
+
+        input,
+        select,
+        textarea,
+        button {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            font-size: 16px;
+            transition: var(--transition);
+            background: var(--light-bg);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 4px rgba(67, 97, 238, 0.2);
+            background: white;
+        }
+
+        .btn {
+            padding: 16px 32px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--primary-color) 0%, #3a56d4 100%);
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            box-shadow: 0 4px 15px rgba(67, 97, 238, 0.3);
+            position: relative;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(67, 97, 238, 0.4);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, var(--secondary-color) 0%, #2d3748 100%);
+            box-shadow: 0 4px 15px rgba(74, 85, 104, 0.3);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, var(--success-color) 0%, var(--success-dark) 100%);
+            box-shadow: 0 4px 15px rgba(32, 201, 151, 0.3);
+        }
+
+        .results-container {
+            margin-top: 30px;
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 25px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .results-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--dark-text);
+        }
+
+        .results-info {
+            font-size: 15px;
+            color: var(--light-text);
+        }
+
+        .query-id-display {
+            background: #e6f7ff;
+            padding: 18px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            border: 1px solid #91d5ff;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+        }
+
+        .query-id-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 18px;
+            color: white;
+            font-size: 18px;
+        }
+
+        .query-id-content {
+            flex-grow: 1;
+        }
+
+        .query-id-label {
+            font-weight: 600;
+            font-size: 15px;
+            color: #096dd9;
+            margin-bottom: 5px;
+        }
+
+        .query-id-value {
+            font-weight: 700;
+            font-size: 18px;
+            color: #0050b3;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            background: white;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 800px;
+        }
+
+        thead th {
+            background: #f0f5ff;
+            color: var(--dark-text);
+            font-weight: 700;
+            padding: 18px 22px;
+            text-align: left;
+            border-bottom: 2px solid #d6e0ff;
+        }
+
+        tbody td {
+            padding: 16px 22px;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 15px;
+        }
+
+        tbody tr:hover {
+            background-color: #f8fbff;
+        }
+
+        tbody tr:nth-child(even) {
+            background-color: #f8fafc;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 12px;
+        }
+
+        .action-btn {
+            padding: 10px 18px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            border: none;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .use-btn {
+            background: rgba(32, 201, 151, 0.1);
+            color: #0d8a66;
+            border: 1px solid rgba(32, 201, 151, 0.2);
+        }
+
+        .copy-btn {
+            background: rgba(67, 97, 238, 0.1);
+            color: #4361ee;
+            border: 1px solid rgba(67, 97, 238, 0.2);
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        textarea {
+            min-height: 160px;
+            resize: vertical;
+            font-family: monospace;
+            font-size: 15px;
+        }
+
+        .upload-result {
+            padding: 18px;
+            border-radius: 10px;
+            margin-top: 25px;
+            font-weight: 500;
+            display: none;
+        }
+
+        .success-result {
+            background: rgba(32, 201, 151, 0.1);
+            color: #0d8a66;
+            border: 1px solid rgba(32, 201, 151, 0.2);
+            display: block;
+        }
+
+        .error-result {
+            background: rgba(220, 53, 69, 0.1);
+            color: #b02a37;
+            border: 1px solid rgba(220, 53, 69, 0.2);
+            display: block;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 30px;
+            gap: 10px;
+        }
+
+        .page-btn {
+            width: 45px;
+            height: 45px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f0f4ff;
+            color: var(--dark-text);
+            font-weight: 600;
+            border: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .page-btn:hover {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .page-info {
+            font-size: 15px;
+            color: var(--light-text);
+            padding: 0 18px;
+        }
+
+        .current-time {
+            font-size: 15px;
+            color: var(--light-text);
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 30px;
+            color: var(--light-text);
+            font-size: 15px;
+            border-top: 1px solid var(--border-color);
+            background: #f8faff;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .date-range {
+                grid-template-columns: 1fr;
+            }
+
+            .timezone-group {
+                grid-template-columns: 1fr;
+            }
+
+            .pagination {
+                flex-wrap: wrap;
+            }
+
+            h1,
+            .subtitle {
+                padding-right: 0;
+            }
+
+            .section-tabs {
+                flex-direction: column;
+            }
+
+            .section-tab {
+                border-bottom: 1px solid var(--border-color);
+                border-radius: 0;
+            }
+
+            .section-tab.active {
+                border-bottom: 3px solid var(--primary-color);
+                border-radius: 0;
+            }
+
+            .sort-controls {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+
+            .sort-controls select {
+                width: 100%;
+                min-width: auto;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <button class="nav-button" id="ad-system-btn">
+                <i class="fas fa-ad"></i>
+                <span>创建广告</span>
+            </button>
+            <button class="nav-button unit-button" id="offer-management-btn">
+                <i class="fas fa-list"></i>
+                <span>广告单元管理</span>
+            </button>
+            <h1>ClickFlare 日志工具</h1>
+            <div class="subtitle">专业的日志查询与转化数据上传工具</div>
+        </header>
+
+        <div class="content-section">
+            <div class="section-title">
+                <i class="fas fa-search"></i>
+                <h2>日志查询</h2>
+            </div>
+
+            <div class="form-group">
+                <label for="campaign-names">活动名称 (多个用逗号分隔)</label>
+                <input type="text" id="campaign-names" class="form-control" placeholder="例如: Campaign-A, Campaign-B">
+            </div>
+
+            <div class="timezone-group">
+                <label>时区:</label>
+                <select class="form-control" id="timezone">
+                    <option value="-8">UTC-8 (太平洋时间)</option>
+                    <option value="-4">UTC-4 (东部时间)</option>
+                    <option value="+8" selected>UTC+8 (中国标准时间)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>时间范围</label>
+                <div class="date-range">
+                    <div>
+                        <input type="datetime-local" class="form-control" id="start-date">
+                        <div class="current-time" id="start-display"></div>
+                    </div>
+                    <div>
+                        <input type="datetime-local" class="form-control" id="end-date">
+                        <div class="current-time" id="end-display"></div>
+                    </div>
+                </div>
+                <button class="btn btn-secondary" id="sync-time">
+                    <i class="fas fa-sync-alt"></i> 同步时间
+                </button>
+            </div>
+
+            <button class="btn" id="query-btn">
+                <i class="fas fa-play"></i> 查询日志
+            </button>
+
+            <!-- 标签切换 -->
+            <div class="section-tabs">
+                <div class="section-tab active" data-tab="event-logs">事件日志</div>
+                <div class="section-tab" data-tab="tracking-report">流量源报告</div>
+            </div>
+
+            <!-- 事件日志内容 -->
+            <div class="tab-content active" id="event-logs">
+                <div class="results-container">
+                    <div class="results-header">
+                        <div class="results-title">查询结果</div>
+                        <div class="results-info">显示 <span id="result-count">0</span> 条结果</div>
+                    </div>
+
+                    <div class="query-id-display">
+                        <div class="query-id-icon">
+                            <i class="fas fa-tag"></i>
+                        </div>
+                        <div class="query-id-content">
+                            <div class="query-id-label">当前查询ID</div>
+                            <div class="query-id-value" id="query-id">等待查询...</div>
+                        </div>
+                    </div>
+
+                    <div class="table-container">
+                        <table id="results-table">
+                            <thead>
+                                <tr>
+                                    <th>ClickID</th>
+                                    <th>事件类型</th>
+                                    <th>活动ID</th>
+                                    <th>访问时间</th>
+                                    <th>点击时间</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="results-body">
+                                <!-- 结果会在这里动态生成 -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="pagination">
+                        <button class="page-btn" id="prev-page"><i class="fas fa-chevron-left"></i></button>
+                        <div class="page-info" id="page-info">第 1 页 / 共 1 页</div>
+                        <button class="page-btn" id="next-page"><i class="fas fa-chevron-right"></i></button>
+                    </div>
+                </div>
+
+                <div class="content-section" style="padding-left: 0;padding-right: 0;">
+                    <div class="section-title">
+                        <i class="fas fa-upload"></i>
+                        <h2>转化数据上传</h2>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="click-ids">点击ID列表 (每行一个: click_id,payout)</label>
+                        <textarea id="click-ids" class="form-control" placeholder="格式:
+click_id1,payout1
+click_id2,payout2
+..."></textarea>
+                    </div>
+
+                    <button class="btn btn-success" id="upload-btn">
+                        <i class="fas fa-cloud-upload-alt"></i> 上传转化数据
+                    </button>
+
+                    <div class="upload-result" id="upload-result">
+                        <i class="fas fa-check-circle"></i> 成功上传 <span id="upload-count">0</span> 条转化记录
+                    </div>
+                </div>
+            </div>
+
+            <!-- 流量源报告内容 -->
+            <div class="tab-content" id="tracking-report">
+                <div class="filter-controls">
+                    <h3>筛选和排序</h3>
+                    <div class="filter-grid">
+                        <div class="form-group">
+                            <label for="min-visits">最小访问量（>=）</label>
+                            <input type="number" id="min-visits" class="form-control" placeholder="例如: 100" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="min-conversions">最大转化数（>=）</label>
+                            <input type="number" id="min-conversions" class="form-control" placeholder="例如: 5" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="sort-by">排序字段</label>
+                            <select class="form-control" id="sort-by">
+                                <option value="trackingField7">流量源ID</option>
+                                <option value="visits">访问量</option>
+                                <option value="uniqueVisits">独立访问</option>
+                                <option value="clicks">点击量</option>
+                                <option value="conversions">转化量</option>
+                                <option value="revenue">收入</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="order-type">排序方式</label>
+                            <select class="form-control" id="order-type">
+                                <option value="asc">正序</option>
+                                <option value="desc">倒序</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button class="btn btn-secondary" id="filter-btn">
+                        <i class="fas fa-filter"></i> 应用筛选
+                    </button>
+                </div>
+
+                <!-- 流量源报告结果 -->
+                <div class="results-container">
+                    <div class="results-header">
+                        <div class="results-title">流量源报告结果</div>
+                        <div class="results-info">显示 <span id="tracking-result-count">0</span> 条结果</div>
+                        <button class="btn btn-secondary" id="copy-all-tracking-ids"
+                            style="margin-left: 10px; padding: 8px 12px; font-size: 13px;width: 160px;">
+                            <i class="fas fa-copy"></i> 复制ID
+                        </button>
+                    </div>
+
+                    <div class="query-id-display">
+                        <div class="query-id-icon">
+                            <i class="fas fa-tag"></i>
+                        </div>
+                        <div class="query-id-content">
+                            <div class="query-id-label">报告查询ID</div>
+                            <div class="query-id-value" id="tracking-query-id">等待查询...</div>
+                        </div>
+                    </div>
+
+                    <div class="table-container">
+                        <table id="tracking-results-table">
+                            <thead>
+                                <tr>
+                                    <th>流量源ID</th>
+                                    <th>访问量</th>
+                                    <th>独立访问</th>
+                                    <th>点击量</th>
+                                    <th>转化量</th>
+                                    <th>收入</th>
+                                    <th>点击率(CTR)</th>
+                                    <th>转化率(CVR)</th>
+                                    <th>ROI</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tracking-results-body">
+                                <!-- 结果会在这里动态生成 -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="pagination">
+                        <button class="page-btn" id="tracking-prev-page"><i class="fas fa-chevron-left"></i></button>
+                        <div class="page-info" id="tracking-page-info">第 1 页 / 共 1 页</div>
+                        <button class="page-btn" id="tracking-next-page"><i class="fas fa-chevron-right"></i></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+    <div class="footer">
+        <p>ClickFlare 日志工具 v2.0 &copy; 2025 | 专业日志查询与管理解决方案</p>
+    </div>
+    </div>
+
+    <script>
+        let currentCampaignId = null;  // 存储当前活动ID
+        let trackingCurrentPage = 1;
+        let trackingTotalPages = 1;
+        let currentMinVisits = null;
+        let currentMinConversions = null;
+
+
+        // 当前页码和查询参数
+        let currentPage = 1;
+        let totalPages = 1;
+        let totalResults = 0;
+        let currentCampaignNames = '';
+        let currentStartDate = '';
+        let currentEndDate = '';
+        let currentTimezone = '+8';
+        let currentQueryId = '';
+
+        // 跳转到广告创建系统
+        document.getElementById( 'ad-system-btn' ).addEventListener( 'click', function () {
+            window.location.href = 'mtg.html';
+        } );
+        document.getElementById( 'offer-management-btn' ).addEventListener( 'click', function () {
+            window.location.href = 'mtg_id.html';
+        } );
+
+        // 新增：标签切换功能
+        document.querySelectorAll( '.section-tab' ).forEach( tab => {
+            tab.addEventListener( 'click', function () {
+                const tabId = this.getAttribute( 'data-tab' );
+
+                // 更新标签状态
+                document.querySelectorAll( '.section-tab' ).forEach( t => {
+                    t.classList.remove( 'active' );
+                } );
+                this.classList.add( 'active' );
+
+                // 更新内容区域
+                document.querySelectorAll( '.tab-content' ).forEach( content => {
+                    content.classList.remove( 'active' );
+                } );
+                document.getElementById( tabId ).classList.add( 'active' );
+            } );
+        } );
+
+        // 初始化时间显示
+        function updateTimeDisplays() {
+            if ( document.getElementById( 'start-date' ).value ) {
+                document.getElementById( 'start-display' ).textContent =
+                    `选择时间: ${formatDateTime( document.getElementById( 'start-date' ).value )}`;
+            }
+            if ( document.getElementById( 'end-date' ).value ) {
+                document.getElementById( 'end-display' ).textContent =
+                    `选择时间: ${formatDateTime( document.getElementById( 'end-date' ).value )}`;
+            }
+        }
+
+        // 格式化日期时间
+        function formatDateTime( datetimeStr ) {
+            const date = new Date( datetimeStr );
+            return date.toLocaleString( 'zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            } );
+        }
+
+        // 同步时间
+        function syncTime() {
+            const timezoneOffset = parseInt( document.getElementById( 'timezone' ).value );
+            const now = new Date();
+            const localOffset = now.getTimezoneOffset() * 60000;
+            const targetOffset = timezoneOffset * 3600000;
+            const targetTime = new Date( now.getTime() + localOffset + targetOffset );
+
+            // 格式化时间为YYYY-MM-DDTHH:mm
+            const year = targetTime.getFullYear();
+            const month = String( targetTime.getMonth() + 1 ).padStart( 2, '0' );
+            const day = String( targetTime.getDate() ).padStart( 2, '0' );
+            const hours = String( targetTime.getHours() ).padStart( 2, '0' );
+            const minutes = String( targetTime.getMinutes() ).padStart( 2, '0' );
+
+            const datetime = `${year}-${month}-${day}T${hours}:${minutes}`;
+            const twoHoursAgo = new Date( targetTime.getTime() - 2 * 3600000 );
+            const twoHoursAgoFormatted = formatDateForInput( twoHoursAgo );
+
+            document.getElementById( 'end-date' ).value = datetime;
+            document.getElementById( 'start-date' ).value = twoHoursAgoFormatted;
+
+            updateTimeDisplays();
+        }
+
+        // 将日期格式化为YYYY-MM-DDTHH:mm
+        function formatDateForInput( date ) {
+            return date.toISOString().slice( 0, 16 );
+        }
+
+        // 生成随机查询ID
+        function generateQueryId() {
+            const chars = '0123456789ABCDEF';
+            let result = 'CF-Q-';
+            for ( let i = 0; i < 8; i++ ) {
+                result += chars.charAt( Math.floor( Math.random() * chars.length ) );
+            }
+            return result;
+        }
+
+        // 重写getEventLogs函数，获取活动ID并存储
+        function getEventLogs() {
+            const namesInput = document.getElementById( 'campaign-names' ).value.trim();
+            const startDate = document.getElementById( 'start-date' ).value;
+            const endDate = document.getElementById( 'end-date' ).value;
+            const timezone = document.getElementById( 'timezone' ).value;
+
+            if ( !namesInput ) {
+                alert( '请输入活动名称' );
+                return;
+            }
+
+            // 重置页码
+            currentPage = 1;
+            currentCampaignNames = namesInput;
+            currentStartDate = startDate;
+            currentEndDate = endDate;
+            currentTimezone = timezone;
+            currentQueryId = generateQueryId();
+            currentCampaignId = null;  // 重置活动ID
+
+            const resultsDiv = document.getElementById( 'results-body' );
+            resultsDiv.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 30px;">查询中...</td></tr>';
+
+            document.getElementById( 'query-id' ).textContent = currentQueryId;
+            document.getElementById( 'tracking-query-id' ).textContent = currentQueryId;
+
+            axios.post( '/api/get_event_logs', {
+                campaign_names: namesInput,
+                start_date: startDate,
+                end_date: endDate,
+                timezone: timezone,
+                page: currentPage,
+                page_size: 10
+            } )
+                .then( response => {
+                    if ( response.data.success ) {
+                        displayResults( response.data );
+
+                        // 如果有活动ID，自动查询tracking报告
+                        if ( currentCampaignId ) {
+                            getTrackingReport();
+                        }
+                    } else {
+                        resultsDiv.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 30px; color: #dc3545;">' +
+                            ( response.data.error || '查询失败' ) + '</td></tr>';
+                    }
+                } )
+                .catch( error => {
+                    const errorMsg = error.response?.data?.error || '查询失败';
+                    resultsDiv.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 30px; color: #dc3545;">' +
+                        errorMsg + '</td></tr>';
+                } );
+        }
+
+        // 重写displayResults函数，提取并存储活动ID
+        function displayResults( data ) {
+            const resultsBody = document.getElementById( 'results-body' );
+            const logs = data.results;
+
+            // 提取活动ID（从第一条记录中）
+            if ( logs.length > 0 && logs[ 0 ].CampaignID ) {
+                currentCampaignId = logs[ 0 ].CampaignID;
+            }
+
+            if ( logs.length === 0 ) {
+                resultsBody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 30px;">没有找到匹配的日志记录</td></tr>';
+                document.getElementById( 'result-count' ).textContent = '0';
+                return;
+            }
+
+            // 计算总页数
+            totalResults = data.total;
+            totalPages = Math.ceil( data.total / data.page_size );
+            document.getElementById( 'result-count' ).textContent = logs.length;
+            document.getElementById( 'page-info' ).textContent = `第 ${currentPage} 页 / 共 ${totalPages} 页`;
+
+            // 生成结果表格
+            let tableHTML = '';
+
+            logs.forEach( log => {
+                tableHTML += `
+                    <tr>
+                        <td><code class="click-id">${log.ClickID || 'N/A'}</code></td>
+                        <td>${log.EventType || 'N/A'}</td>
+                        <td>${log.CampaignID || 'N/A'}</td>
+                        <td>${log.VisitTime || 'N/A'}</td>
+                        <td>${log.ClickTime || 'N/A'}</td>
+                        <td class="action-buttons">
+                            <button class="action-btn use-btn" data-clickid="${log.ClickID}">
+                                <i class="fas fa-plus"></i> 使用
+                            </button>
+                            <button class="action-btn copy-btn" data-clickid="${log.ClickID}">
+                                <i class="fas fa-copy"></i> 复制
+                            </button>
+                        </td>
+                    </tr>`;
+            } );
+
+            resultsBody.innerHTML = tableHTML;
+
+            // 添加事件监听器
+            document.querySelectorAll( '.use-btn' ).forEach( btn => {
+                btn.addEventListener( 'click', function () {
+                    const clickId = this.getAttribute( 'data-clickid' );
+                    useClickId( clickId );
+                } );
+            } );
+
+            document.querySelectorAll( '.copy-btn' ).forEach( btn => {
+                btn.addEventListener( 'click', function () {
+                    const clickId = this.getAttribute( 'data-clickid' );
+                    copyClickId( clickId );
+                } );
+            } );
+        }
+
+        // 新增：查询trackingField7报告
+        function getTrackingReport() {
+            if ( !currentCampaignId ) {
+                alert( '未找到活动ID，请先查询事件日志' );
+                return;
+            }
+
+            // 获取筛选条件（新增）
+            const minVisits = document.getElementById( 'min-visits' ).value.trim();
+            const minConversions = document.getElementById( 'min-conversions' ).value.trim();
+
+            // 验证筛选条件（必须为数字或空）
+            if ( minVisits && isNaN( minVisits ) ) {
+                alert( '最小访问量必须是数字' );
+                return;
+            }
+            if ( minConversions && isNaN( minConversions ) ) {
+                alert( '最小转化数必须是数字' );
+                return;
+            }
+
+            // 保存当前筛选条件
+            currentMinVisits = minVisits ? parseInt( minVisits ) : null;
+            currentMinConversions = minConversions ? parseInt( minConversions ) : null;
+
+            // 时间格式处理（原有代码）
+            const startDate = formatDateTimeForApi( currentStartDate );
+            const endDate = formatDateTimeForApi( currentEndDate );
+            const timezone = currentTimezone;
+            const sortBy = document.getElementById( 'sort-by' ).value;
+            const orderType = document.getElementById( 'order-type' ).value;
+
+            const resultsDiv = document.getElementById( 'tracking-results-body' );
+            resultsDiv.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 30px;">查询中...</td></tr>';
+
+            // 构造请求参数（新增筛选条件）
+            const requestData = {
+                campaign_id: currentCampaignId,
+                start_date: startDate,
+                end_date: endDate,
+                timezone: timezone,
+                sort_by: sortBy,
+                order_type: orderType,
+                page: trackingCurrentPage,
+                page_size: 30,
+                min_visits: currentMinVisits,       // 新增
+                min_conversions: currentMinConversions  // 新增
+            };
+
+            axios.post( '/api/get_tracking_report', requestData )
+                .then( response => {
+                    if ( response.data.success ) {
+                        displayTrackingResults( response.data.data );
+                    } else {
+                        resultsDiv.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 30px; color: #dc3545;">' +
+                            ( response.data.error || '报告查询失败' ) + '</td></tr>';
+                    }
+                } )
+                .catch( error => {
+                    const errorMsg = error.response?.data?.error || '报告查询失败';
+                    resultsDiv.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 30px; color: #dc3545;">' +
+                        errorMsg + '</td></tr>';
+                } );
+        }
+
+        // 新增：绑定筛选按钮事件
+        document.getElementById( 'filter-btn' ).addEventListener( 'click', function () {
+            trackingCurrentPage = 1;  // 重置为第一页
+            getTrackingReport();
+        } );
+
+
+        // 新增：格式化日期为API所需格式
+        function formatDateTimeForApi( datetimeStr ) {
+            // 转换YYYY-MM-DDTHH:mm格式为YYYY-MM-DD HH:mm:ss
+            return datetimeStr.replace( 'T', ' ' ) + ':00';
+        }
+
+        // 新增：显示tracking报告结果
+        function displayTrackingResults( data ) {
+            const resultsBody = document.getElementById( 'tracking-results-body' );
+            const trackingData = data.tracking_data;
+            const totals = data.totals;
+            const pageInfo = data.page_info;
+
+            trackingTotalPages = pageInfo.total_pages;
+            document.getElementById( 'tracking-result-count' ).textContent = trackingData.length;
+            document.getElementById( 'tracking-page-info' ).textContent =
+                `第 ${trackingCurrentPage} 页 / 共 ${trackingTotalPages} 页`;
+
+            if ( trackingData.length === 0 ) {
+                resultsBody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 30px;">没有找到匹配的tracking数据</td></tr>';
+                return;
+            }
+
+            // 生成结果表格
+            let tableHTML = '';
+
+            trackingData.forEach( item => {
+                tableHTML += `
+                    <tr>
+                        <td>${item.trackingField7 || 'N/A'}</td>
+                        <td>${item.visits || 0}</td>
+                        <td>${item.uniqueVisits || 0}</td>
+                        <td>${item.clicks || 0}</td>
+                        <td>${item.conversions || 0}</td>
+                        <td>$${( item.revenue || 0 ).toFixed( 2 )}</td>
+                        <td>${( ( item.ctr || 0 ) ).toFixed( 2 )}%</td>
+                        <td>${( ( item.cvr || 0 ) ).toFixed( 2 )}%</td>
+                        <td>${( ( item.roi || 0 ) ).toFixed( 2 )}%</td>
+                    </tr>`;
+            } );
+
+            resultsBody.innerHTML = tableHTML;
+        }
+
+        // 修改分页函数，确保筛选条件生效
+        function changeTrackingPage( direction ) {
+            let newPage = trackingCurrentPage;
+            if ( direction === 'prev' && trackingCurrentPage > 1 ) {
+                newPage = trackingCurrentPage - 1;
+            } else if ( direction === 'next' && trackingCurrentPage < trackingTotalPages ) {
+                newPage = trackingCurrentPage + 1;
+            } else {
+                return;
+            }
+            trackingCurrentPage = newPage;
+            getTrackingReport();  // 分页切换时携带筛选条件
+        }
+
+        // 切换页面
+        function changePage( direction ) {
+            let newPage = currentPage;
+
+            if ( direction === 'prev' && currentPage > 1 ) {
+                newPage = currentPage - 1;
+            } else if ( direction === 'next' && currentPage < totalPages ) {
+                newPage = currentPage + 1;
+            } else {
+                return;
+            }
+
+            currentPage = newPage;
+            const resultsBody = document.getElementById( 'results-body' );
+            resultsBody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 30px;">加载中...</td></tr>';
+
+            axios.post( '/api/get_event_logs', {
+                campaign_names: currentCampaignNames,
+                start_date: currentStartDate,
+                end_date: currentEndDate,
+                timezone: currentTimezone,
+                page: currentPage,
+                page_size: 10
+            } )
+                .then( response => {
+                    if ( response.data.success ) {
+                        displayResults( response.data );
+                    } else {
+                        resultsBody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 30px; color: #dc3545;">' +
+                            ( response.data.error || '查询失败' ) + '</td></tr>';
+                    }
+                } )
+                .catch( error => {
+                    const errorMsg = error.response?.data?.error || '查询失败';
+                    resultsBody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 30px; color: #dc3545;">' +
+                        errorMsg + '</td></tr>';
+                } );
+        }
+
+        // 使用ClickID填充表单
+        function useClickId( clickId ) {
+            document.getElementById( 'click-ids' ).value += `${clickId},0.0\n`;
+
+            // 添加成功效果
+            const buttons = document.querySelectorAll( `.action-btn[data-clickid="${clickId}"]` );
+            buttons.forEach( btn => {
+                if ( btn.classList.contains( 'use-btn' ) ) {
+                    btn.innerHTML = '<i class="fas fa-check"></i> 已使用';
+                    btn.style.backgroundColor = 'rgba(32, 201, 151, 0.2)';
+
+                    setTimeout( () => {
+                        btn.innerHTML = '<i class="fas fa-plus"></i> 使用';
+                        btn.style.backgroundColor = '';
+                    }, 1500 );
+                }
+            } );
+        }
+
+        // 复制ClickID
+        function copyClickId( clickId ) {
+            navigator.clipboard.writeText( clickId )
+                .then( () => {
+                    const buttons = document.querySelectorAll( `.action-btn[data-clickid="${clickId}"]` );
+                    buttons.forEach( btn => {
+                        if ( btn.classList.contains( 'copy-btn' ) ) {
+                            btn.innerHTML = '<i class="fas fa-check"></i> 已复制';
+                            btn.style.backgroundColor = 'rgba(67, 97, 238, 0.2)';
+
+                            setTimeout( () => {
+                                btn.innerHTML = '<i class="fas fa-copy"></i> 复制';
+                                btn.style.backgroundColor = '';
+                            }, 1500 );
+                        }
+                    } );
+                } )
+                .catch( err => {
+                    alert( '复制失败，请手动复制' );
+                } );
+        }
+
+        // 上传转化数据
+        function uploadConversions() {
+            const textarea = document.getElementById( 'click-ids' );
+            const text = textarea.value.trim();
+            const resultsDiv = document.getElementById( 'upload-result' );
+            const resultsCount = document.getElementById( 'upload-count' );
+
+            if ( !text ) {
+                resultsDiv.className = 'upload-result error-result';
+                resultsDiv.innerHTML = '<i class="fas fa-exclamation-circle"></i> 请提供转化数据';
+                return;
+            }
+
+            // 解析文本为转化记录
+            const conversions = [];
+            const lines = text.split( '\n' );
+
+            for ( const line of lines ) {
+                const parts = line.split( ',' );
+                if ( parts.length >= 2 ) {
+                    const clickId = parts[ 0 ].trim();
+                    const payout = parseFloat( parts[ 1 ].trim() );
+
+                    if ( clickId && !isNaN( payout ) ) {
+                        conversions.push( {
+                            click_id: clickId,
+                            payout: payout
+                        } );
+                    }
+                }
+            }
+
+            if ( conversions.length === 0 ) {
+                resultsDiv.className = 'upload-result error-result';
+                resultsDiv.innerHTML = '<i class="fas fa-exclamation-circle"></i> 未发现有效的转化记录';
+                return;
+            }
+
+            resultsDiv.className = 'upload-result';
+            resultsDiv.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 上传中...';
+
+            axios.post( '/api/upload_conversions', {
+                conversions: conversions
+            } )
+                .then( response => {
+                    if ( response.data.success ) {
+                        resultsDiv.className = 'upload-result success-result';
+                        resultsDiv.innerHTML = `<i class="fas fa-check-circle"></i> ${response.data.message}`;
+                        resultsCount.textContent = conversions.length;
+                        textarea.value = '';
+                    } else {
+                        resultsDiv.className = 'upload-result error-result';
+                        resultsDiv.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${response.data.error || '上传失败'}`;
+                    }
+                } )
+                .catch( error => {
+                    const errorMsg = error.response?.data?.error || '上传失败';
+                    resultsDiv.className = 'upload-result error-result';
+                    resultsDiv.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${errorMsg}`;
+                } );
+        }
+
+        // 复制所有流量源ID的JavaScript代码，并在初始化函数中添加事件监听器。
+        // 复制所有流量源ID
+        function copyAllTrackingIds() {
+            const trackingResultsBody = document.getElementById( 'tracking-results-body' );
+            const rows = trackingResultsBody.querySelectorAll( 'tr' );
+            let trackingIds = [];
+
+            rows.forEach( row => {
+                const trackingId = row.cells[ 0 ].textContent.trim();
+                if ( trackingId ) {
+                    trackingIds.push( trackingId );
+                }
+            } );
+
+            if ( trackingIds.length > 0 ) {
+                const textToCopy = trackingIds.join( '\n' );
+                navigator.clipboard.writeText( textToCopy )
+                    .then( () => {
+                        const button = document.getElementById( 'copy-all-tracking-ids' );
+                        const originalHTML = button.innerHTML;
+                        button.innerHTML = '<i class="fas fa-check"></i> 已复制';
+                        button.style.backgroundColor = 'rgba(67, 97, 238, 0.2)';
+
+                        setTimeout( () => {
+                            button.innerHTML = originalHTML;
+                            button.style.backgroundColor = '';
+                        }, 1500 );
+                    } )
+                    .catch( err => {
+                        alert( '复制失败，请手动复制' );
+                    } );
+            } else {
+                alert( '没有可复制的流量源ID' );
+            }
+        }
+
+        // 初始化函数
+        function init() {
+            // 设置初始时间
+            syncTime();
+
+            // 设置时间输入框改变事件
+            document.getElementById( 'start-date' ).addEventListener( 'change', updateTimeDisplays );
+            document.getElementById( 'end-date' ).addEventListener( 'change', updateTimeDisplays );
+
+            // 设置同步时间按钮事件
+            document.getElementById( 'sync-time' ).addEventListener( 'click', syncTime );
+
+            // 设置查询按钮事件
+            document.getElementById( 'query-btn' ).addEventListener( 'click', getEventLogs );
+
+            // 设置上传按钮事件
+            document.getElementById( 'upload-btn' ).addEventListener( 'click', uploadConversions );
+
+            // 设置分页按钮事件
+            document.getElementById( 'prev-page' ).addEventListener( 'click', () => changePage( 'prev' ) );
+            document.getElementById( 'next-page' ).addEventListener( 'click', () => changePage( 'next' ) );
+
+            // 标签切换事件
+            const tabs = document.querySelectorAll( '.section-tab' );
+            tabs.forEach( tab => {
+                tab.addEventListener( 'click', () => {
+                    // 移除所有标签的active类
+                    tabs.forEach( t => t.classList.remove( 'active' ) );
+                    // 为当前点击的标签添加active类
+                    tab.classList.add( 'active' );
+
+                    // 隐藏所有内容区域
+                    const contents = document.querySelectorAll( '.tab-content' );
+                    contents.forEach( content => content.classList.remove( 'active' ) );
+
+                    // 显示对应的内容区域
+                    const targetTab = tab.getAttribute( 'data-tab' );
+                    const targetContent = document.getElementById( targetTab );
+                    if ( targetContent ) {
+                        targetContent.classList.add( 'active' );
+                    }
+                } );
+            } );
+
+            // 新增事件监听器
+            document.getElementById( 'query-btn' ).addEventListener( 'click', function () {
+                getEventLogs();
+                // 切换到事件日志标签
+                document.querySelector( '.section-tab[data-tab="event-logs"]' ).click();
+            } );
+
+            // 修改：分页和排序事件需要携带筛选条件
+            document.getElementById( 'sort-by' ).addEventListener( 'change', function () {
+                if ( currentCampaignId ) {
+                    trackingCurrentPage = 1;
+                    getTrackingReport();  // 自动应用当前筛选条件
+                }
+            } );
+
+            document.getElementById( 'order-type' ).addEventListener( 'change', function () {
+                if ( currentCampaignId ) {
+                    trackingCurrentPage = 1;
+                    getTrackingReport();
+                }
+            } );
+
+            document.getElementById( 'tracking-prev-page' ).addEventListener( 'click', () => {
+                changeTrackingPage( 'prev' );
+            } );
+
+            document.getElementById( 'tracking-next-page' ).addEventListener( 'click', () => {
+                changeTrackingPage( 'next' );
+            } );
+
+            // 点击TrackingField7标签时自动查询
+            document.querySelector( '.section-tab[data-tab="tracking-report"]' ).addEventListener( 'click', function () {
+                if ( currentCampaignId && currentStartDate && currentEndDate ) {
+                    getTrackingReport();
+                }
+            } );
+
+            // 添加复制所有流量源ID按钮事件监听器
+            document.getElementById( 'copy-all-tracking-ids' ).addEventListener( 'click', copyAllTrackingIds );
+        }
+
+        // 页面加载完成后初始化
+        window.addEventListener( 'DOMContentLoaded', init );
+    </script>
+</body>
+
+</html>
