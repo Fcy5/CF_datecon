@@ -8,7 +8,7 @@ a = Analysis(
     binaries=[],
     datas=[
         ('templates/*', 'templates'),  # 包含模板文件夹
-        ('static/*', 'static'),        # 包含静态文件
+
     ],
     hiddenimports=[
         'flask',
@@ -105,7 +105,7 @@ app = BUNDLE(
         entitlements_file=None,
     ),
     name='ClickFlare工具.app',  # 应用包名称
-    icon='icon.icns',  # macOS应用图标文件
+
     bundle_identifier='com.qlapp.ClickFlareTool',  # 应用标识符
     info_plist={
         'NSHighResolutionCapable': 'True',
