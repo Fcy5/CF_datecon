@@ -1,35 +1,45 @@
 # -*- mode: python ; coding: utf-8 -*-
 import os
+from glob import glob  # 引入glob用于可靠的文件匹配
 
 block_cipher = None
 
+# 修复模板文件路径匹配（兼容GitHub Actions环境）
+templates_files = []
+templates_dir = os.path.abspath('templates')
+if os.path.exists(templates_dir):
+    # 递归获取所有文件，确保路径正确
+    for root, dirs, files in os.walk(templates_dir):
+        for file in files:
+            src_path = os.path.join(root, file)
+            # 计算相对路径，确保打包后目录结构正确
+            rel_path = os.path.relpath(root, templates_dir)
+            dest_path = os.path.join('templates', rel_path)
+            templates_files.append((src_path, dest_path))
+
 a = Analysis(
-    ['app.py'],  # 你的主程序入口
+    ['app.py'],  # 主程序入口
     pathex=[os.path.abspath('.')],
     binaries=[],
-    datas=[
-        # 递归打包 templates 文件夹所有内容（包括子目录）
-        (os.path.abspath('templates/**/*'), 'templates'),
-    ],
+    datas=templates_files,  # 使用动态生成的模板文件列表
     hiddenimports=[
-        # 基础 Flask 与网络依赖
+        # Flask及Web相关依赖
         'flask', 'flask.json', 'jinja2', 'jinja2.ext',
         'werkzeug', 'werkzeug.middleware.dispatcher',
-        'requests', 'requests.packages.urllib3', 'urllib3',
+        'requests', 'urllib3',
         
-        # Mac 原生交互核心依赖（解决闪退关键）
+        # Mac原生交互依赖（解决闪退）
         'objc', 'Foundation', 'Cocoa', 'WebKit',
-        'webview', 'webview.platforms.cocoa',  # WebView Mac 实现
+        'webview', 'webview.platforms.cocoa',
         
-        # 文件处理与系统依赖
+        # 系统及文件处理依赖
         'multipart', 'tempfile', 'os', 'sys', 'io',
-        'json.decoder', 'json.encoder', 'datetime',
-        'threading', 'socket', 'logging',
+        'json', 'datetime', 'threading', 'socket',
     ],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=['tkinter'],  # 排除无用的 GUI 库
+    excludes=['tkinter'],
     cipher=block_cipher,
     noarchive=False,
 )
@@ -45,39 +55,25 @@ app = BUNDLE(
         name='ClickFlare工具',
         debug=False,
         strip=False,
-        upx=False,  # 关闭压缩，避免原生库损坏
-        console=True,  # 保留控制台输出，方便调试
+        upx=False,  # 关闭压缩避免原生库损坏
+        console=True,
         disable_windowed_traceback=False,
         argv_emulation=False,
-        target_arch=['x86_64', 'arm64'],  # 同时支持 Intel 和 M 系列芯片
+        target_arch=['x86_64', 'arm64'],  # 兼容Intel和M芯片
         codesign_identity=None,
         entitlements_file=None,
     ),
     name='ClickFlare工具.app',
     bundle_identifier='com.qlapp.ClickFlareTool',
     info_plist={
-        # 高分辨率支持
         'NSHighResolutionCapable': 'True',
-        # 网络访问权限
         'NSAppTransportSecurity': {'NSAllowsArbitraryLoads': True},
-        # 文件访问权限声明（解决文件选择闪退）
+        # 文件访问权限（解决文件选择闪退）
         'NSPhotoLibraryUsageDescription': '需要访问照片库以上传素材',
         'NSDocumentsFolderUsageDescription': '需要处理上传的文件',
         'NSDesktopFolderUsageDescription': '需要访问桌面文件',
         'NSDownloadsFolderUsageDescription': '需要访问下载文件夹',
-        'NSFileProviderDomainUsageDescription': '需要读取本地文件',
-        # 最低系统版本要求
-        'LSMinimumSystemVersion': '10.15',
-        # 支持的文件类型
-        'CFBundleDocumentTypes': [
-            {
-                'CFBundleTypeName': 'Excel File',
-                'CFBundleTypeRole': 'Viewer',
-                'LSItemContentTypes': [
-                    'org.openxmlformats.spreadsheetml.sheet',
-                    'com.microsoft.excel.xls'
-                ]
-            }
-        ]
+        'LSMinimumSystemVersion': '10.15',  # 最低系统版本
     },
 )
+    
