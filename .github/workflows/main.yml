@@ -13,22 +13,23 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version: '3.9'
-        # 移除缓存配置（避免因缺少requirements.txt报错）
-        
+        # 移除缓存避免requirements.txt报错
+    
     - name: Install Xcode tools
       run: |
-        sudo xcode-select --install || true
+        xcode-select -p || sudo xcode-select --install
         sudo xcodebuild -license accept
         
     - name: Install dependencies
       run: |
-        # 设置环境变量
+        # 设置macOS编译环境
         export SDKROOT=$(xcrun --show-sdk-path)
         export CFLAGS="-I$SDKROOT/usr/include"
         
-        # 直接安装所需依赖（不依赖requirements.txt）
-        pip install pyinstaller flask requests jinja2 pywebview
-        # 补充Mac原生依赖（解决闪退核心）
+        # 安装所有必需依赖（包含文件上传和Mac原生库）
+        pip install pyinstaller==6.15.0  # 匹配日志中的版本
+        pip install flask requests jinja2 werkzeug pywebview
+        # 安装Mac原生依赖（解决闪退核心）
         pip install pyobjc-core==10.2 pyobjc-framework-Cocoa==10.2 pyobjc-framework-WebKit==10.2
         
     - name: Build application
@@ -37,10 +38,16 @@ jobs:
         
     - name: Create DMG
       run: |
-        hdiutil create -volname "ClickFlare工具" \
-          -srcfolder dist/ClickFlare工具.app \
-          -ov -format UDZO \
-          dist/ClickFlare工具.dmg
+        # 先检查app是否生成，避免dmg打包失败
+        if [ -d "dist/ClickFlare工具.app" ]; then
+          hdiutil create -volname "ClickFlare工具" \
+            -srcfolder dist/ClickFlare工具.app \
+            -ov -format UDZO \
+            dist/ClickFlare工具.dmg
+        else
+          echo "Error: 应用未生成"
+          exit 1
+        fi
         
     - name: Upload artifact
       uses: actions/upload-artifact@v4
