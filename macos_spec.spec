@@ -1,39 +1,39 @@
 # -*- mode: python ; coding: utf-8 -*-
 import os
-from glob import glob  # 引入glob用于可靠的文件匹配
+from glob import glob
 
 block_cipher = None
 
-# 修复模板文件路径匹配（兼容GitHub Actions环境）
+# 修复1：模板文件路径（兼容空文件夹/不存在场景）
 templates_files = []
 templates_dir = os.path.abspath('templates')
 if os.path.exists(templates_dir):
-    # 递归获取所有文件，确保路径正确
     for root, dirs, files in os.walk(templates_dir):
         for file in files:
-            src_path = os.path.join(root, file)
-            # 计算相对路径，确保打包后目录结构正确
-            rel_path = os.path.relpath(root, templates_dir)
-            dest_path = os.path.join('templates', rel_path)
-            templates_files.append((src_path, dest_path))
+            src = os.path.join(root, file)
+            dest = os.path.join('templates', os.path.relpath(root, templates_dir))
+            templates_files.append((src, dest))
 
 a = Analysis(
-    ['app.py'],  # 主程序入口
+    ['app.py'],
     pathex=[os.path.abspath('.')],
     binaries=[],
-    datas=templates_files,  # 使用动态生成的模板文件列表
+    datas=templates_files,
     hiddenimports=[
-        # Flask及Web相关依赖
+        # Flask/Web核心依赖
         'flask', 'flask.json', 'jinja2', 'jinja2.ext',
         'werkzeug', 'werkzeug.middleware.dispatcher',
         'requests', 'urllib3',
         
-        # Mac原生交互依赖（解决闪退）
+        # 修复2：移除不存在的`multipart`，替换为实际依赖的`werkzeug.formparser`（文件上传用）
+        'werkzeug.formparser', 'werkzeug.datastructures',
+        
+        # Mac原生依赖（解决闪退）
         'objc', 'Foundation', 'Cocoa', 'WebKit',
         'webview', 'webview.platforms.cocoa',
         
-        # 系统及文件处理依赖
-        'multipart', 'tempfile', 'os', 'sys', 'io',
+        # 系统基础依赖
+        'tempfile', 'os', 'sys', 'io',
         'json', 'datetime', 'threading', 'socket',
     ],
     hookspath=[],
@@ -59,7 +59,8 @@ app = BUNDLE(
         console=True,
         disable_windowed_traceback=False,
         argv_emulation=False,
-        target_arch=['x86_64', 'arm64'],  # 兼容Intel和M芯片
+        # 修复3：`target_arch`不能用列表，用字符串（GitHub macOS-15.5是arm64，兼容M芯片）
+        target_arch='arm64',
         codesign_identity=None,
         entitlements_file=None,
     ),
@@ -68,7 +69,7 @@ app = BUNDLE(
     info_plist={
         'NSHighResolutionCapable': 'True',
         'NSAppTransportSecurity': {'NSAllowsArbitraryLoads': True},
-        # 文件访问权限（解决文件选择闪退）
+        # 文件访问权限（解决闪退）
         'NSPhotoLibraryUsageDescription': '需要访问照片库以上传素材',
         'NSDocumentsFolderUsageDescription': '需要处理上传的文件',
         'NSDesktopFolderUsageDescription': '需要访问桌面文件',
@@ -76,4 +77,3 @@ app = BUNDLE(
         'LSMinimumSystemVersion': '10.15',  # 最低系统版本
     },
 )
-    
