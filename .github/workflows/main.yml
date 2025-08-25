@@ -4,7 +4,7 @@ on: [push]
 
 jobs:
   build:
-    runs-on: macos-14  # 明确使用 macOS 14 环境（比 latest 更稳定）
+    runs-on: macos-latest
     
     steps:
     - uses: actions/checkout@v4
@@ -13,34 +13,29 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version: '3.9'
-        cache: 'pip'  # 缓存依赖加速构建
+        # 移除缓存配置（避免因缺少requirements.txt报错）
         
-    - name: Install Xcode tools (确保原生依赖可用)
+    - name: Install Xcode tools
       run: |
-        xcode-select -p || sudo xcode-select --install
+        sudo xcode-select --install || true
         sudo xcodebuild -license accept
         
-    - name: Install dependencies (关键版本控制)
+    - name: Install dependencies
       run: |
-        # 设置 macOS 编译环境变量
+        # 设置环境变量
         export SDKROOT=$(xcrun --show-sdk-path)
         export CFLAGS="-I$SDKROOT/usr/include"
         
-        # 安装与 macOS 兼容的核心依赖（解决桥接崩溃）
-        pip install pyobjc-core==10.2
-        pip install pyobjc-framework-Cocoa==10.2
-        pip install pyobjc-framework-WebKit==10.2
-        pip install pywebview==3.7.5  # 稳定版 webview，避免文件选择问题
+        # 直接安装所需依赖（不依赖requirements.txt）
+        pip install pyinstaller flask requests jinja2 pywebview
+        # 补充Mac原生依赖（解决闪退核心）
+        pip install pyobjc-core==10.2 pyobjc-framework-Cocoa==10.2 pyobjc-framework-WebKit==10.2
         
-        # 安装项目基础依赖
-        pip install pyinstaller==5.13  # 固定版本，避免打包逻辑变动
-        pip install flask requests jinja2 werkzeug
-        
-    - name: Build application (使用修改后的 spec)
+    - name: Build application
       run: |
         pyinstaller macos_spec.spec
         
-    - name: Create DMG (优化分发格式)
+    - name: Create DMG
       run: |
         hdiutil create -volname "ClickFlare工具" \
           -srcfolder dist/ClickFlare工具.app \
