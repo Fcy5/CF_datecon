@@ -676,6 +676,29 @@
         }
 
 
+        /* 新增拖放区域高亮样式 */
+        .preview-container.highlight {
+            background-color: rgba(67, 97, 238, 0.1);
+            border-color: #4361ee;
+        }
+
+        /* 新增拖放提示样式 */
+        .drag-hint {
+            position: absolute;
+            bottom: 10px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            color: #4361ee;
+            font-weight: 600;
+            font-size: 14px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .preview-container.drag-over .drag-hint {
+            opacity: 1;
+        }
     </style>
 </head>
 <body>
@@ -797,17 +820,19 @@ padding: 10px 20px">
                         <div class="section-title">广告图片</div>
                     </div>
 
-                    <div class="preview-container">
+                    <!-- 修改预览容器，添加拖放功能 -->
+                    <div class="preview-container" id="drop-area">
                         <div class="preview-placeholder" id="image-placeholder">
                             <i class="fas fa-cloud-upload-alt"></i>
-                            <p>点击下方按钮上传广告图片</p>
+                            <p>拖放图片到此处或点击下方按钮上传</p>
                         </div>
                         <img src="" alt="广告图片预览" class="image-preview" id="image-preview">
+                        <div class="drag-hint">松开鼠标上传图片</div>
                     </div>
 
                     <div class="upload-container">
                         <label for="file-upload" class="file-btn">
-                            <i class="fas fa-upload"></i> 上传广告图片
+                            <i class="fas fa-upload"></i> 选择广告图片
                         </label>
                         <input type="file" id="file-upload" accept="image/*">
                         <p class="note">支持 JPG, PNG 格式，建议尺寸：512×512</p>
@@ -1024,462 +1049,532 @@ padding: 10px 20px">
     </div>
 
     <script>
-        // 页面加载后初始化
-        document.addEventListener('DOMContentLoaded', function() {
-            // 标签页切换
-            const tabBtns = document.querySelectorAll('.tab-btn');
-            const tabContents = document.querySelectorAll('.tab-content');
-
-            tabBtns.forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const tabId = this.getAttribute('data-tab');
-
-                    // 更新标签按钮状态
-                    tabBtns.forEach(btn => btn.classList.remove('active'));
-                    this.classList.add('active');
-
-                    // 更新标签内容状态
-                    tabContents.forEach(content => {
-                        content.classList.remove('active');
-                        if(content.id === tabId) {
-                            content.classList.add('active');
-                        }
-                    });
-
-                    // 如果切换到广告单元标签，尝试填充数据
-                    if(tabId === 'create-offer') {
-                        populateOfferForm();
-                    }
-                });
-            });
-
-            // 返回日志工具
-            document.getElementById('back-to-log-btn').addEventListener('click', function() {
-                window.location.href = '/index.html';
-            });
-
-            // 图片上传预览
-            document.getElementById('file-upload').addEventListener('change', function(e) {
-                const file = e.target.files[0];
-                if (file && file.type.match('image.*')) {
-                    const reader = new FileReader();
-
-                    reader.onload = function(e) {
-                        const preview = document.getElementById('image-preview');
-                        const placeholder = document.getElementById('image-placeholder');
-
-                        preview.src = e.target.result;
-                        preview.style.display = 'block';
-                        placeholder.style.display = 'none';
-                        document.getElementById('create-btn').disabled = false;
-                    }
-
-                    reader.readAsDataURL(file);
-                } else {
-                    document.getElementById('create-btn').disabled = true;
-                }
-            });
-
-            // 验证表单启用创建按钮
-            const campaignNameInput = document.getElementById('campaign-name');
-            const previewUrlInput = document.getElementById('preview-url');
-            const platformSelect = document.getElementById('platform');
-
-            const validateForm = () => {
-                const isValid = campaignNameInput.value.trim() !== '' &&
-                               previewUrlInput.value.trim() !== '' &&
-                               platformSelect.value !== '' &&
-                               document.getElementById('file-upload').files.length > 0;
-
-                document.getElementById('create-btn').disabled = !isValid;
-            };
-
-            campaignNameInput.addEventListener('input', validateForm);
-            previewUrlInput.addEventListener('input', validateForm);
-            platformSelect.addEventListener('change', validateForm);
-
-            // 广告查询
-            document.getElementById('search-campaign-btn').addEventListener('click', async function() {
-                const searchTerm = document.getElementById('campaign-search-input').value.trim();
-
-                if (!searchTerm) {
-                    showStatus('请输入查询关键词', 'error');
-                    return;
-                }
-
-                try {
-                    // 显示加载状态
-                    const searchBtn = document.getElementById('search-campaign-btn');
-                    searchBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 查询中...';
-                    searchBtn.disabled = true;
-
-                    // 调用广告查询API
-                    const response = await fetch(`/api/search_campaigns?search=${encodeURIComponent(searchTerm)}`);
-                    const result = await response.json();
-
-                    // 恢复按钮状态
-                    searchBtn.innerHTML = '<i class="fas fa-search"></i> 查询广告';
-                    searchBtn.disabled = false;
-
-                    if (result.code === 200) {
-                        // 显示查询结果
-                        const resultsContainer = document.getElementById('campaign-results-container');
-                        resultsContainer.innerHTML = '';
-
-                        if (result.data.campaigns.length === 0) {
-                            resultsContainer.innerHTML = '<p style="text-align: center; padding: 20px;">未找到匹配的广告</p>';
-                            document.getElementById('selected-campaign').style.display = 'none';
-                        } else {
-                            result.data.campaigns.forEach(campaign => {
-                                const item = document.createElement('div');
-                                item.className = 'campaign-result-item';
-                                item.innerHTML = `
-                                    <div class="campaign-result-header">
-                                        <div class="campaign-result-id">ID: ${campaign.campaign_id}</div>
-                                        <div class="campaign-result-name">${campaign.campaign_name}</div>
-                                    </div>
-                                    <div class="campaign-result-details">
-                                        <div class="campaign-result-row">
-                                            <span class="campaign-result-label">平台:</span>
-                                            <span>${campaign.platform}</span>
-                                        </div>
-                                        <div class="campaign-result-row">
-                                            <span class="campaign-result-label">产品:</span>
-                                            <span>${campaign.product_name}</span>
-                                        </div>
-                                        <div class="campaign-result-row">
-                                            <span class="campaign-result-label">预览URL:</span>
-                                            <span>${campaign.preview_url}</span>
-                                        </div>
-                                        <div class="campaign-result-row">
-                                            <span class="campaign-result-label">状态:</span>
-                                            <span>${campaign.status}</span>
-                                        </div>
-                                    </div>
-                                `;
-
-                                item.addEventListener('click', function() {
-                                    // 移除之前的选择
-                                    document.querySelectorAll('.campaign-result-item').forEach(el => {
-                                        el.classList.remove('selected');
-                                    });
-
-                                    // 标记当前选择
-                                    this.classList.add('selected');
-
-                                    // 显示选中信息
-                                    document.getElementById('selected-campaign-id').textContent = campaign.campaign_id;
-                                    document.getElementById('selected-campaign-name').textContent = campaign.campaign_name;
-                                    document.getElementById('selected-campaign').style.display = 'flex';
-                                });
-
-                                resultsContainer.appendChild(item);
-                            });
-                        }
-                    } else {
-                        showStatus(`查询失败: ${result.msg}`, 'error');
-                    }
-                } catch (error) {
-                    // 恢复按钮状态
-                    const searchBtn = document.getElementById('search-campaign-btn');
-                    searchBtn.innerHTML = '<i class="fas fa-search"></i> 查询广告';
-                    searchBtn.disabled = false;
-
-                    // 错误处理
-                    showStatus(`查询失败: ${error.message}`, 'error');
-                }
-            });
-
-            // 使用选中的广告创建广告单元
-            document.getElementById('use-for-offer-btn').addEventListener('click', function() {
-                const campaignId = document.getElementById('selected-campaign-id').textContent;
-                const campaignName = document.getElementById('selected-campaign-name').textContent;
-
-                // 填充广告单元创建页的广告活动信息
-                document.getElementById('current-campaign-id').textContent = campaignId;
-                document.getElementById('current-campaign-name').textContent = campaignName;
-
-                // 切换到广告单元创建标签页
-                document.querySelector('[data-tab="create-offer"]').click();
-
-                // 显示提示信息
-                showStatus(`已使用广告 "${campaignName}" 的信息填充表单`, 'info');
-            });
-
-            // 创建广告
-            document.getElementById('create-btn').addEventListener('click', async function() {
-                const campaignName = document.getElementById('campaign-name').value.trim();
-                const previewUrl = document.getElementById('preview-url').value.trim();
-                const platform = document.getElementById('platform').value;
-                const fileInput = document.getElementById('file-upload');
-
-                try {
-                    // 显示加载状态
-                    const createBtn = document.getElementById('create-btn');
-                    createBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 创建中...';
-                    createBtn.disabled = true;
-
-                    // 准备表单数据（包含文件）
-                    const formData = new FormData();
-                    formData.append('campaign_name', campaignName);
-                    formData.append('preview_url', previewUrl);
-                    formData.append('platform', platform);
-                    formData.append('file', fileInput.files[0]);
-
-                    // 发送创建广告请求
-                    const response = await fetch('/api/create_campaign_with_creative', {
-                        method: 'POST',
-                        body: formData
-                    });
-
-                    const result = await response.json();
-
-                    if (response.ok && result.code === 200) {
-                        // 成功响应
-                        showStatus('广告活动创建成功！', 'success');
-
-                        // 显示广告活动创建结果
-                        document.getElementById('campaign-result').style.display = 'block';
-                        document.getElementById('result-campaign-id').textContent = result.data.campaign_id;
-                        document.getElementById('result-campaign-name').textContent = campaignName;
-                        document.getElementById('result-platform').textContent = platform === 'ANDROID' ? '安卓' : 'iOS';
-                        document.getElementById('result-material-md5').textContent = result.data.creative_md5;
-
-                        // 填充广告单元创建页的广告活动信息
-                        document.getElementById('current-campaign-id').textContent = result.data.campaign_id;
-                        document.getElementById('current-campaign-name').textContent = campaignName;
-
-                        // 填充创意组搜索框
-                        const keyword = extractKeywordFromName(campaignName);
-                        if(keyword) {
-                            document.getElementById('creative-set-name').value = keyword;
-                        }
-                    } else {
-                        const errorMsg = result.msg || '广告创建失败，请重试';
-                        showStatus(`错误: ${errorMsg}`, 'error');
-                    }
-                } catch (error) {
-                    // 错误处理
-                    showStatus(`网络错误: ${error.message}`, 'error');
-                } finally {
-                    // 恢复按钮状态
-                    const createBtn = document.getElementById('create-btn');
-                    createBtn.innerHTML = '<i class="fas fa-rocket"></i> 创建广告活动';
-                    createBtn.disabled = false;
-                }
-            });
-
-            // 查询创意组
-            document.getElementById('search-creative-btn').addEventListener('click', async function() {
-                const creativeSetName = document.getElementById('creative-set-name').value.trim();
-
-                if (!creativeSetName) {
-                    showStatus('请输入创意组名称', 'error');
-                    return;
-                }
-
-                try {
-                    // 显示加载状态
-                    const searchBtn = document.getElementById('search-creative-btn');
-                    searchBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 查询中...';
-                    searchBtn.disabled = true;
-
-                    // 调用创意组查询API
-                    const response = await fetch(`/api/get_creative_sets?creative_set_name=${encodeURIComponent(creativeSetName)}`);
-                    const result = await response.json();
-
-                    // 恢复按钮状态
-                    searchBtn.innerHTML = '<i class="fas fa-search"></i> 查询创意组';
-                    searchBtn.disabled = false;
-
-                    if (result.code === 200) {
-                        // 显示查询结果
-                        const resultsContainer = document.getElementById('creative-results-container');
-                        resultsContainer.innerHTML = '';
-
-                        if (result.data.creative_sets.length === 0) {
-                            resultsContainer.innerHTML = '<p style="text-align: center; padding: 20px;">未找到匹配的创意组</p>';
-                            document.getElementById('selected-creative-set').style.display = 'none';
-                        } else {
-                            result.data.creative_sets.forEach(creativeSet => {
-                                const item = document.createElement('div');
-                                item.className = 'creative-result-item';
-                                item.innerHTML = `
-                                    <div class="creative-result-header">
-                                        <div class="creative-result-id">ID: ${creativeSet.creative_set_id}</div>
-                                        <div class="creative-result-name">${creativeSet.creative_set_name}</div>
-                                    </div>
-                                    <div class="creative-result-details">
-                                        <div>素材数量: ${creativeSet.material_count}</div>
-                                        <div>广告组名称: ${creativeSet.campaign_name}</div>
-
-                                    </div>
-                                `;
-
-                                item.addEventListener('click', function() {
-                                    // 移除之前的选择
-                                    document.querySelectorAll('.creative-result-item').forEach(el => {
-                                        el.classList.remove('selected');
-                                    });
-
-                                    // 标记当前选择
-                                    this.classList.add('selected');
-
-                                    // 显示选中信息
-                                    document.getElementById('selected-set-id').textContent = creativeSet.creative_set_id;
-                                    document.getElementById('selected-set-name').textContent = creativeSet.creative_set_name;
-                                    document.getElementById('selected-creative-set').style.display = 'block';
-
-                                    // 填充广告单元创建页的创意组信息
-                                    document.getElementById('current-creative-set-id').textContent = creativeSet.creative_set_id;
-                                    document.getElementById('current-creative-set-name').textContent = creativeSet.creative_set_name;
-
-                                    // 启用广告单元创建按钮
-                                    document.getElementById('create-offer-btn').disabled = false;
-                                });
-
-                                resultsContainer.appendChild(item);
-                            });
-                        }
-                    } else {
-                        showStatus(`查询失败: ${result.msg}`, 'error');
-                    }
-                } catch (error) {
-                    // 恢复按钮状态
-                    const searchBtn = document.getElementById('search-creative-btn');
-                    searchBtn.innerHTML = '<i class="fas fa-search"></i> 查询创意组';
-                    searchBtn.disabled = false;
-
-                    // 错误处理
-                    showStatus(`查询失败: ${error.message}`, 'error');
-                }
-            });
-
-            // 创建广告单元
-            document.getElementById('create-offer-btn').addEventListener('click', async function() {
-                const campaignId = document.getElementById('current-campaign-id').textContent;
-                const creativeSetId = document.getElementById('current-creative-set-id').textContent;
-                const offerName = document.getElementById('offer-name').value.trim();
-                const bidRate = document.getElementById('bid-rate').value;
-                const targetGeo = document.getElementById('target-geo').value;
-                const billingType = document.getElementById('billing-type').value;
-
-                if (!offerName) {
-                    showOfferStatus('请输入广告单元名称', 'error');
-                    return;
-                }
-
-                if (campaignId === '-' || creativeSetId === '-') {
-                    showOfferStatus('请先完成广告活动和创意组选择', 'error');
-                    return;
-                }
-
-                try {
-                    // 显示加载状态
-                    const createBtn = document.getElementById('create-offer-btn');
-                    createBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 创建中...';
-                    createBtn.disabled = true;
-
-                    // 准备请求数据 - 修复API要求的字段
-                    const requestData = {
-                        campaign_id: campaignId,
-                        creative_set_id: creativeSetId,
-                        offer_name: offerName,
-                        bid_rate: parseFloat(bidRate),
-                        target_geo: targetGeo,
-                        billing_type: billingType,
-                        // 添加API要求的字段
-                        creative_sets: [{
-                            creative_set_id: creativeSetId,
-                            creative_set_name: document.getElementById('current-creative-set-name').textContent,
-                            // 这里需要从创意组查询结果中获取实际值
-                            ad_outputs: [111], // 示例值，实际应从创意组数据获取
-                            creatives: [
-                                {creative_md5: "example_md5_1"},
-                                {creative_md5: "example_md5_2"}
-                            ]
-                        }]
-                    };
-
-                    // 发送创建广告单元请求
-                    const response = await fetch('/api/create_offer', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(requestData)
-                    });
-
-                    const result = await response.json();
-
-                    if (result.code === 200) {
-                        // 显示成功状态
-                        showOfferStatus('广告单元创建成功！', 'success');
-
-                        // 显示广告单元创建结果
-                        document.getElementById('offer-result').style.display = 'block';
-                        document.getElementById('result-offer-id').textContent = result.data.offer_id;
-                        document.getElementById('result-offer-name').textContent = offerName;
-                        document.getElementById('result-offer-billing').textContent =
-                            document.querySelector('#billing-type option:checked').textContent;
-                        document.getElementById('result-offer-bid').textContent = bidRate +
-                            (billingType === 'CPM' ? ' (每千次展示成本)' : ' (每次安装成本)');
-                        document.getElementById('result-offer-geo').textContent =
-                            document.querySelector('#target-geo option:checked').textContent;
-                    } else {
-                        const errorMsg = result.msg || '广告单元创建失败，请重试';
-                        showOfferStatus(`错误: ${errorMsg}`, 'error');
-                    }
-                } catch (error) {
-                    showOfferStatus(`网络错误: ${error.message}`, 'error');
-                } finally {
-                    // 恢复按钮状态
-                    const createBtn = document.getElementById('create-offer-btn');
-                    createBtn.innerHTML = '<i class="fas fa-plus-circle"></i> 创建广告单元';
-                    createBtn.disabled = false;
-                }
-            });
-
-            // 填充广告单元表单
-            function populateOfferForm() {
-                const campaignId = document.getElementById('result-campaign-id')?.textContent;
-                const creativeSetId = document.getElementById('selected-set-id')?.textContent;
-
-                if(campaignId && campaignId !== '-') {
-                    document.getElementById('current-campaign-id').textContent = campaignId;
-                    document.getElementById('current-campaign-name').textContent =
-                        document.getElementById('result-campaign-name')?.textContent || 'N/A';
-                }
-
-                if(creativeSetId && creativeSetId !== '-') {
-                    document.getElementById('current-creative-set-id').textContent = creativeSetId;
-                    document.getElementById('current-creative-set-name').textContent =
-                        document.getElementById('selected-set-name')?.textContent || 'N/A';
-                    document.getElementById('create-offer-btn').disabled = false;
-                }
+    // 页面加载后初始化
+    document.addEventListener('DOMContentLoaded', function() {
+        // ========== 新增拖放上传功能 ==========
+        const dropArea = document.getElementById('drop-area');
+        const fileInput = document.getElementById('file-upload');
+        const imagePreview = document.getElementById('image-preview');
+        const imagePlaceholder = document.getElementById('image-placeholder');
+        const dragHint = document.querySelector('.drag-hint');
+
+        // 全局变量存储当前选择的文件
+        let currentFile = null;
+
+        // 防止浏览器默认行为
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, preventDefaults, false);
+            document.body.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        // 高亮显示拖放区域
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropArea.addEventListener(eventName, function() {
+                this.classList.add('highlight', 'drag-over');
+            }, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, function() {
+                this.classList.remove('highlight', 'drag-over');
+            }, false);
+        });
+
+        // 处理文件拖放
+        dropArea.addEventListener('drop', handleDrop, false);
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+
+            if (files.length) {
+                processFile(files[0]);
             }
+        }
 
-            // 从广告名称提取关键字
-            function extractKeywordFromName(name) {
-                const pattern = /([a-zA-Z]+\d+[a-zA-Z]?)/;
-                const matches = name.match(pattern);
-                return matches ? matches[0] : null;
-            }
-
-            // 显示广告活动状态
-            function showStatus(message, type) {
-                const statusMessage = document.getElementById('status-message');
-                statusMessage.textContent = message;
-                statusMessage.className = 'status-message ' + type;
-            }
-
-            // 显示广告单元状态
-            function showOfferStatus(message, type) {
-                const statusMessage = document.getElementById('offer-status-message');
-                statusMessage.textContent = message;
-                statusMessage.className = 'status-message ' + type;
+        // 处理文件选择（通过按钮）
+        fileInput.addEventListener('change', function(e) {
+            if (this.files.length) {
+                processFile(this.files[0]);
             }
         });
-    </script>
+
+        // 点击drop area触发文件选择
+        dropArea.addEventListener('click', function() {
+            fileInput.click();
+        });
+
+        // 处理文件（预览+上传）
+        function processFile(file) {
+            // 检查文件类型
+            if (!file.type.match('image.*')) {
+                showStatus('请上传图片文件 (JPG, PNG)', 'error');
+                return;
+            }
+
+            // 检查文件大小（5MB限制）
+            if (file.size > 5 * 1024 * 1024) {
+                showStatus('文件大小不能超过5MB', 'error');
+                return;
+            }
+
+            // 存储当前文件
+            currentFile = file;
+
+            // 显示预览
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                imagePreview.src = e.target.result;
+                imagePreview.style.display = 'block';
+                imagePlaceholder.style.display = 'none';
+
+                // 启用创建按钮
+                validateForm();
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // ========== 标签页切换 ==========
+        const tabBtns = document.querySelectorAll('.tab-btn');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const tabId = this.getAttribute('data-tab');
+
+                // 更新标签按钮状态
+                tabBtns.forEach(btn => btn.classList.remove('active'));
+                this.classList.add('active');
+
+                // 更新标签内容状态
+                tabContents.forEach(content => {
+                    content.classList.remove('active');
+                    if(content.id === tabId) {
+                        content.classList.add('active');
+                    }
+                });
+
+                // 如果切换到广告单元标签，尝试填充数据
+                if(tabId === 'create-offer') {
+                    populateOfferForm();
+                }
+            });
+        });
+
+        // 返回日志工具
+        document.getElementById('back-to-log-btn').addEventListener('click', function() {
+            window.location.href = '/index.html';
+        });
+
+        // 验证表单启用创建按钮
+        const campaignNameInput = document.getElementById('campaign-name');
+        const previewUrlInput = document.getElementById('preview-url');
+        const platformSelect = document.getElementById('platform');
+
+        const validateForm = () => {
+            const isValid = campaignNameInput.value.trim() !== '' &&
+                           previewUrlInput.value.trim() !== '' &&
+                           platformSelect.value !== '' &&
+                           currentFile !== null;
+
+            document.getElementById('create-btn').disabled = !isValid;
+        };
+
+        campaignNameInput.addEventListener('input', validateForm);
+        previewUrlInput.addEventListener('input', validateForm);
+        platformSelect.addEventListener('change', validateForm);
+
+        // 广告查询
+        document.getElementById('search-campaign-btn').addEventListener('click', async function() {
+            const searchTerm = document.getElementById('campaign-search-input').value.trim();
+
+            if (!searchTerm) {
+                showStatus('请输入查询关键词', 'error');
+                return;
+            }
+
+            try {
+                // 显示加载状态
+                const searchBtn = document.getElementById('search-campaign-btn');
+                searchBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 查询中...';
+                searchBtn.disabled = true;
+
+                // 调用广告查询API
+                const response = await fetch(`/api/search_campaigns?search=${encodeURIComponent(searchTerm)}`);
+                const result = await response.json();
+
+                // 恢复按钮状态
+                searchBtn.innerHTML = '<i class="fas fa-search"></i> 查询广告';
+                searchBtn.disabled = false;
+
+                if (result.code === 200) {
+                    // 显示查询结果
+                    const resultsContainer = document.getElementById('campaign-results-container');
+                    resultsContainer.innerHTML = '';
+
+                    if (result.data.campaigns.length === 0) {
+                        resultsContainer.innerHTML = '<p style="text-align: center; padding: 20px;">未找到匹配的广告</p>';
+                        document.getElementById('selected-campaign').style.display = 'none';
+                    } else {
+                        result.data.campaigns.forEach(campaign => {
+                            const item = document.createElement('div');
+                            item.className = 'campaign-result-item';
+                            item.innerHTML = `
+                                <div class="campaign-result-header">
+                                    <div class="campaign-result-id">ID: ${campaign.campaign_id}</div>
+                                    <div class="campaign-result-name">${campaign.campaign_name}</div>
+                                </div>
+                                <div class="campaign-result-details">
+                                    <div class="campaign-result-row">
+                                        <span class="campaign-result-label">平台:</span>
+                                        <span>${campaign.platform}</span>
+                                    </div>
+                                    <div class="campaign-result-row">
+                                        <span class="campaign-result-label">产品:</span>
+                                        <span>${campaign.product_name}</span>
+                                    </div>
+                                    <div class="campaign-result-row">
+                                        <span class="campaign-result-label">预览URL:</span>
+                                        <span>${campaign.preview_url}</span>
+                                    </div>
+                                    <div class="campaign-result-row">
+                                        <span class="campaign-result-label">状态:</span>
+                                        <span>${campaign.status}</span>
+                                    </div>
+                                </div>
+                            `;
+
+                            item.addEventListener('click', function() {
+                                // 移除之前的选择
+                                document.querySelectorAll('.campaign-result-item').forEach(el => {
+                                    el.classList.remove('selected');
+                                });
+
+                                // 标记当前选择
+                                this.classList.add('selected');
+
+                                // 显示选中信息
+                                document.getElementById('selected-campaign-id').textContent = campaign.campaign_id;
+                                document.getElementById('selected-campaign-name').textContent = campaign.campaign_name;
+                                document.getElementById('selected-campaign').style.display = 'flex';
+                            });
+
+                            resultsContainer.appendChild(item);
+                        });
+                    }
+                } else {
+                    showStatus(`查询失败: ${result.msg}`, 'error');
+                }
+            } catch (error) {
+                // 恢复按钮状态
+                const searchBtn = document.getElementById('search-campaign-btn');
+                searchBtn.innerHTML = '<i class="fas fa-search"></i> 查询广告';
+                searchBtn.disabled = false;
+
+                // 错误处理
+                showStatus(`查询失败: ${error.message}`, 'error');
+            }
+        });
+
+        // 使用选中的广告创建广告单元
+        document.getElementById('use-for-offer-btn').addEventListener('click', function() {
+            const campaignId = document.getElementById('selected-campaign-id').textContent;
+            const campaignName = document.getElementById('selected-campaign-name').textContent;
+
+            // 填充广告单元创建页的广告活动信息
+            document.getElementById('current-campaign-id').textContent = campaignId;
+            document.getElementById('current-campaign-name').textContent = campaignName;
+
+            // 切换到广告单元创建标签页
+            document.querySelector('[data-tab="create-offer"]').click();
+
+            // 显示提示信息
+            showStatus(`已使用广告 "${campaignName}" 的信息填充表单`, 'info');
+        });
+
+        // 创建广告
+        document.getElementById('create-btn').addEventListener('click', async function() {
+            const campaignName = document.getElementById('campaign-name').value.trim();
+            const previewUrl = document.getElementById('preview-url').value.trim();
+            const platform = document.getElementById('platform').value;
+
+            // 检查是否有文件
+            if (!currentFile) {
+                showStatus('请上传创意素材', 'error');
+                return;
+            }
+
+            try {
+                // 显示加载状态
+                const createBtn = document.getElementById('create-btn');
+                createBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 创建中...';
+                createBtn.disabled = true;
+
+                // 准备表单数据（包含文件）
+                const formData = new FormData();
+                formData.append('campaign_name', campaignName);
+                formData.append('preview_url', previewUrl);
+                formData.append('platform', platform);
+                formData.append('file', currentFile);
+
+                // 发送创建广告请求
+                const response = await fetch('/api/create_campaign_with_creative', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.code === 200) {
+                    // 成功响应
+                    showStatus('广告活动创建成功！', 'success');
+
+                    // 显示广告活动创建结果
+                    document.getElementById('campaign-result').style.display = 'block';
+                    document.getElementById('result-campaign-id').textContent = result.data.campaign_id;
+                    document.getElementById('result-campaign-name').textContent = campaignName;
+                    document.getElementById('result-platform').textContent = platform === 'ANDROID' ? '安卓' : 'iOS';
+                    document.getElementById('result-material-md5').textContent = result.data.creative_md5;
+
+                    // 填充广告单元创建页的广告活动信息
+                    document.getElementById('current-campaign-id').textContent = result.data.campaign_id;
+                    document.getElementById('current-campaign-name').textContent = campaignName;
+
+                    // 填充创意组搜索框
+                    const keyword = extractKeywordFromName(campaignName);
+                    if(keyword) {
+                        document.getElementById('creative-set-name').value = keyword;
+                    }
+                } else {
+                    const errorMsg = result.msg || '广告创建失败，请重试';
+                    showStatus(`错误: ${errorMsg}`, 'error');
+                }
+            } catch (error) {
+                // 错误处理
+                showStatus(`网络错误: ${error.message}`, 'error');
+            } finally {
+                // 恢复按钮状态
+                const createBtn = document.getElementById('create-btn');
+                createBtn.innerHTML = '<i class="fas fa-rocket"></i> 创建广告活动';
+                createBtn.disabled = false;
+            }
+        });
+
+        // 查询创意组
+        document.getElementById('search-creative-btn').addEventListener('click', async function() {
+            const creativeSetName = document.getElementById('creative-set-name').value.trim();
+
+            if (!creativeSetName) {
+                showStatus('请输入创意组名称', 'error');
+                return;
+            }
+
+            try {
+                // 显示加载状态
+                const searchBtn = document.getElementById('search-creative-btn');
+                searchBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 查询中...';
+                searchBtn.disabled = true;
+
+                // 调用创意组查询API
+                const response = await fetch(`/api/get_creative_sets?creative_set_name=${encodeURIComponent(creativeSetName)}`);
+                const result = await response.json();
+
+                // 恢复按钮状态
+                searchBtn.innerHTML = '<i class="fas fa-search"></i> 查询创意组';
+                searchBtn.disabled = false;
+
+                if (result.code === 200) {
+                    // 显示查询结果
+                    const resultsContainer = document.getElementById('creative-results-container');
+                    resultsContainer.innerHTML = '';
+
+                    if (result.data.creative_sets.length === 0) {
+                        resultsContainer.innerHTML = '<p style="text-align: center; padding: 20px;">未找到匹配的创意组</p>';
+                        document.getElementById('selected-creative-set').style.display = 'none';
+                    } else {
+                        result.data.creative_sets.forEach(creativeSet => {
+                            const item = document.createElement('div');
+                            item.className = 'creative-result-item';
+                            item.innerHTML = `
+                                <div class="creative-result-header">
+                                    <div class="creative-result-id">ID: ${creativeSet.creative_set_id}</div>
+                                    <div class="creative-result-name">${creativeSet.creative_set_name}</div>
+                                </div>
+                                <div class="creative-result-details">
+                                    <div>素材数量: ${creativeSet.material_count}</div>
+                                    <div>广告组名称: ${creativeSet.campaign_name}</div>
+                                </div>
+                            `;
+
+                            item.addEventListener('click', function() {
+                                // 移除之前的选择
+                                document.querySelectorAll('.creative-result-item').forEach(el => {
+                                    el.classList.remove('selected');
+                                });
+
+                                // 标记当前选择
+                                this.classList.add('selected');
+
+                                // 显示选中信息
+                                document.getElementById('selected-set-id').textContent = creativeSet.creative_set_id;
+                                document.getElementById('selected-set-name').textContent = creativeSet.creative_set_name;
+                                document.getElementById('selected-creative-set').style.display = 'block';
+
+                                // 填充广告单元创建页的创意组信息
+                                document.getElementById('current-creative-set-id').textContent = creativeSet.creative_set_id;
+                                document.getElementById('current-creative-set-name').textContent = creativeSet.creative_set_name;
+
+                                // 启用广告单元创建按钮
+                                document.getElementById('create-offer-btn').disabled = false;
+                            });
+
+                            resultsContainer.appendChild(item);
+                        });
+                    }
+                } else {
+                    showStatus(`查询失败: ${result.msg}`, 'error');
+                }
+            } catch (error) {
+                // 恢复按钮状态
+                const searchBtn = document.getElementById('search-creative-btn');
+                searchBtn.innerHTML = '<i class="fas fa-search"></i> 查询创意组';
+                searchBtn.disabled = false;
+
+                // 错误处理
+                showStatus(`查询失败: ${error.message}`, 'error');
+            }
+        });
+
+        // 创建广告单元
+        document.getElementById('create-offer-btn').addEventListener('click', async function() {
+            const campaignId = document.getElementById('current-campaign-id').textContent;
+            const creativeSetId = document.getElementById('current-creative-set-id').textContent;
+            const offerName = document.getElementById('offer-name').value.trim();
+            const bidRate = document.getElementById('bid-rate').value;
+            const targetGeo = document.getElementById('target-geo').value;
+            const billingType = document.getElementById('billing-type').value;
+
+            if (!offerName) {
+                showOfferStatus('请输入广告单元名称', 'error');
+                return;
+            }
+
+            if (campaignId === '-' || creativeSetId === '-') {
+                showOfferStatus('请先完成广告活动和创意组选择', 'error');
+                return;
+            }
+
+            try {
+                // 显示加载状态
+                const createBtn = document.getElementById('create-offer-btn');
+                createBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 创建中...';
+                createBtn.disabled = true;
+
+                // 准备请求数据 - 修复API要求的字段
+                const requestData = {
+                    campaign_id: campaignId,
+                    creative_set_id: creativeSetId,
+                    offer_name: offerName,
+                    bid_rate: parseFloat(bidRate),
+                    target_geo: targetGeo,
+                    billing_type: billingType,
+                    // 添加API要求的字段
+                    creative_sets: [{
+                        creative_set_id: creativeSetId,
+                        creative_set_name: document.getElementById('current-creative-set-name').textContent,
+                        // 这里需要从创意组查询结果中获取实际值
+                        ad_outputs: [111], // 示例值，实际应从创意组数据获取
+                        creatives: [
+                            {creative_md5: "example_md5_1"},
+                            {creative_md5: "example_md5_2"}
+                        ]
+                    }]
+                };
+
+                // 发送创建广告单元请求
+                const response = await fetch('/api/create_offer', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestData)
+                });
+
+                const result = await response.json();
+
+                if (result.code === 200) {
+                    // 显示成功状态
+                    showOfferStatus('广告单元创建成功！', 'success');
+
+                    // 显示广告单元创建结果
+                    document.getElementById('offer-result').style.display = 'block';
+                    document.getElementById('result-offer-id').textContent = result.data.offer_id;
+                    document.getElementById('result-offer-name').textContent = offerName;
+                    document.getElementById('result-offer-billing').textContent =
+                        document.querySelector('#billing-type option:checked').textContent;
+                    document.getElementById('result-offer-bid').textContent = bidRate +
+                        (billingType === 'CPM' ? ' (每千次展示成本)' : ' (每次安装成本)');
+                    document.getElementById('result-offer-geo').textContent =
+                        document.querySelector('#target-geo option:checked').textContent;
+                } else {
+                    const errorMsg = result.msg || '广告单元创建失败，请重试';
+                    showOfferStatus(`错误: ${errorMsg}`, 'error');
+                }
+            } catch (error) {
+                showOfferStatus(`网络错误: ${error.message}`, 'error');
+            } finally {
+                // 恢复按钮状态
+                const createBtn = document.getElementById('create-offer-btn');
+                createBtn.innerHTML = '<i class="fas fa-plus-circle"></i> 创建广告单元';
+                createBtn.disabled = false;
+            }
+        });
+
+        // 填充广告单元表单
+        function populateOfferForm() {
+            const campaignId = document.getElementById('result-campaign-id')?.textContent;
+            const creativeSetId = document.getElementById('selected-set-id')?.textContent;
+
+            if(campaignId && campaignId !== '-') {
+                document.getElementById('current-campaign-id').textContent = campaignId;
+                document.getElementById('current-campaign-name').textContent =
+                    document.getElementById('result-campaign-name')?.textContent || 'N/A';
+            }
+
+            if(creativeSetId && creativeSetId !== '-') {
+                document.getElementById('current-creative-set-id').textContent = creativeSetId;
+                document.getElementById('current-creative-set-name').textContent =
+                    document.getElementById('selected-set-name')?.textContent || 'N/A';
+                document.getElementById('create-offer-btn').disabled = false;
+            }
+        }
+
+        // 从广告名称提取关键字
+        function extractKeywordFromName(name) {
+            const pattern = /([a-zA-Z]+\d+[a-zA-Z]?)/;
+            const matches = name.match(pattern);
+            return matches ? matches[0] : null;
+        }
+
+        // 显示广告活动状态
+        function showStatus(message, type) {
+            const statusMessage = document.getElementById('status-message');
+            statusMessage.textContent = message;
+            statusMessage.className = 'status-message ' + type;
+        }
+
+        // 显示广告单元状态
+        function showOfferStatus(message, type) {
+            const statusMessage = document.getElementById('offer-status-message');
+            statusMessage.textContent = message;
+            statusMessage.className = 'status-message ' + type;
+        }
+    });
+</script>
 </body>
 </html>
