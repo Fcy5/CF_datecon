@@ -28,7 +28,6 @@ else:
     # 开发环境
     app = Flask(__name__)
 
-
 # ClickFlare操作接口
 # ClickFlare API 配置
 API_KEY = "0cd87c1ce7251b3aa8414f3613b259b3e282bf7c66cd56f4ae2913eeb53c5ee0.e2deb7cb288cc2544c1836a235f25ab3f59bcfb6"
@@ -49,7 +48,6 @@ def get_campaign_id_by_name(campaign_name):
         response = conn.getresponse()
 
         if response.status != 200:
-
             raise Exception(f"API调用失败: 状态码 {response.status}")
 
         data = json.loads(response.read().decode())
@@ -305,6 +303,7 @@ def api_get_event_logs():
                 except ValueError:
                     continue
             return datetime.now()  # 默认值
+
         # 原始时间处理逻辑
         start_date = parse_datetime(data["start_date"])
         end_date = parse_datetime(data["end_date"])
@@ -438,13 +437,16 @@ def api_upload_conversions():
         logger.error(error_msg)
         return jsonify({"error": error_msg}), 500
 
+
 @app.route('/mtg.html')
 def mtg_page():
     return render_template('mtg.html')
 
+
 @app.route('/mtg_id.html')
 def mtg_id_page():
     return render_template('mtg_id.html')
+
 
 @app.route('/index.html')
 def index_page():
@@ -490,12 +492,12 @@ def index():
                            default_timezone="+8")  # 默认选择中国时区
 
 
-
-
 # MTG操作接口
 # Access Key和API Key
-HARDCODED_ACCESS_KEY = "157b51a428d2bcf8f837aed3690ca322"
-HARDCODED_API_KEY = "f5a790d556f481ff7ecc4a0e5ce8cad7"
+# HARDCODED_ACCESS_KEY = "157b51a428d2bcf8f837aed3690ca322"
+# HARDCODED_API_KEY = "f5a790d556f481ff7ecc4a0e5ce8cad7"
+HARDCODED_ACCESS_KEY = "5cc4db728653da2316ca9309d4ff894f"
+HARDCODED_API_KEY = "8bf63783e0a77a56381ec81b2b935a8a"
 MINTERGRAL_API_URL = "https://ss-api.mintegral.com/api/open/v1"
 MINTERGRAL_CAMPAIGN_URL = "https://ss-api.mintegral.com/api/open/v1/campaign"
 MINTERGRAL_UPLOAD_URL = "https://ss-storage-api.mintegral.com/api/open/v1/creatives/upload"
@@ -506,7 +508,9 @@ MINTERGRAL_CREATE_OFFER_URL = "https://ss-api.mintegral.com/api/open/v1/offer"
 
 # 分类配置（按API要求）
 IOS_CATEGORIES = "6018,6000,6022,6017,6016,6023,6014,6013,6012,6020,6011,6010,6009,6021,OTHERS,6008,6006,6024,6005,6004,6003,6002,6001"
-ANDROID_CATEGORIES = "GAME,ANDROID_WEAR,ART_AND_DESIGN,AUTO_AND_VEHICLES,BEAUTY,BOOKS_AND_REFERENCE,BUSINESS,COMICS,COMMUNICATION,DATING,EDUCATION,ENTERTAINMENT,EVENTS,FINANCE,FOOD_AND_DRINK,HEALTH_AND_FITNESS,HOUSE_AND_HOME,LIBRARIES_AND_DEMO,LIFESTYLE,MAPS_AND_NAVIGATION,MEDICAL,MUSIC_AND_AUDIO,NEWS_AND_MAGAZINES,OTHERS,PARENTING,PERSONALIZATION,PHOTOGRAPHY,PRODUCTIVITY,SHOPPING,SOCIAL,SPORTS,TOOLS,TRAVEL_AND_LOCAL,VIDEO_PLAYERS,WEATHER"
+# ANDROID_CATEGORIES = "GAME,ANDROID_WEAR,ART_AND_DESIGN,AUTO_AND_VEHICLES,BEAUTY,BOOKS_AND_REFERENCE,BUSINESS,COMICS,COMMUNICATION,DATING,EDUCATION,ENTERTAINMENT,EVENTS,FINANCE,FOOD_AND_DRINK,HEALTH_AND_FITNESS,HOUSE_AND_HOME,LIBRARIES_AND_DEMO,LIFESTYLE,MAPS_AND_NAVIGATION,MEDICAL,MUSIC_AND_AUDIO,NEWS_AND_MAGAZINES,OTHERS,PARENTING,PERSONALIZATION,PHOTOGRAPHY,PRODUCTIVITY,SHOPPING,SOCIAL,SPORTS,TOOLS,TRAVEL_AND_LOCAL,VIDEO_PLAYERS,WEATHER"
+
+ANDROID_CATEGORIES = "TOOLS"
 
 
 def generate_token(api_key, timestamp):
@@ -858,6 +862,7 @@ def get_creative_sets():
         logger.error(f"创意组查询异常: {str(e)}", exc_info=True)
         return jsonify({"code": 500, "msg": str(e)}), 500
 
+
 # 创建广告单元接口
 def get_timezone_offset(tz_name):
     tz_map = {
@@ -893,7 +898,10 @@ def create_offer():
         timezone_name = data.get('timezone', 'Asia/Shanghai')  # 时区名称
 
         # 广告展示类型：匹配MTG的target_ad_type（图片+视频全类型）
+
         target_ad_type = (
+            "BANNER,"
+            "MORE_OFFER,"
             "DISPLAY_INTERSTITIAL,"  # 全屏图片
             "DISPLAY_NATIVE,"  # 原生广告（包含横图、Icon等）
             "APPWALL,"  # 应用墙
@@ -973,28 +981,58 @@ def create_offer():
         logger.info(f"成功获取创意组详情: {creative_set_detail.get('creative_set_name')}")
 
         # 创意类型映射字典 - 全英文名称
+        # creative_type_mapping = {
+        #     # 图片类 (111)
+        #     "FULL_SCREEN_IMAGE": 111,  # 全屏图片
+        #     "LANDSCAPE_IMAGE": 111,  # 横图
+        #     "ICON": 111,  # Icon
+        #     "BASIC_BANNER": 111,  # 基础横幅
+        #     "IMAGE_BANNER": 111,  # 图片横幅
+        #
+        #     # 视频类 (211)
+        #     "VIDEO_END_CARD": 211,  # 视频&图片结束卡片
+        #     "VIDEO_PLAYABLE": 211,  # 视频&试玩广告
+        #     "FULL_SCREEN_VIDEO": 211,  # 全屏视频
+        #     "LARGE_VIDEO_BANNER": 211,  # 视频大横幅
+        #     "SMALL_VIDEO_BANNER": 211,  # 视频小横幅
+        #
+        #     # HTML类 (311)
+        #     "PLAYABLE_AD": 311,  # 试玩广告
+        #
+        #     # 通用类型（如果API返回这些）
+        #     "VIDEO": 211,  # 视频类通用
+        #     "IMAGE": 111,  # 图片类通用
+        #     "PLAYABLE": 311  # HTML类通用
+        # }
         creative_type_mapping = {
-            # 图片类 (111)
-            "FULL_SCREEN_IMAGE": 111,  # 全屏图片
-            "LANDSCAPE_IMAGE": 111,  # 横图
-            "ICON": 111,  # Icon
-            "BASIC_BANNER": 111,  # 基础横幅
-            "IMAGE_BANNER": 111,  # 图片横幅
+            # 图片类 (1xx)
+            "FULL_SCREEN_IMAGE": 111,  # 全屏创意 - 全屏图片
+            "DISPLAY_INTERSTITIAL": 111,  # 图片类插屏广告
+            "BANNER": 121,  # 大横幅创意 - 横图
+            "DISPLAY_NATIVE": 121,  # 原生图片广告
+            "ICON": 122,  # 小横幅创意 - Icon
+            "MORE_OFFER": 122,  # More Offer
+            "APP_WALL": 122,  # App Wall
+            "BASIC_BANNER": 131,  # 小横幅创意 - 基础横幅
+            "IMAGE_BANNER": 132,  # 小横幅创意 - 图片横幅
 
-            # 视频类 (211)
-            "VIDEO_END_CARD": 211,  # 视频&图片结束卡片
-            "VIDEO_PLAYABLE": 211,  # 视频&试玩广告
-            "FULL_SCREEN_VIDEO": 211,  # 全屏视频
-            "LARGE_VIDEO_BANNER": 211,  # 视频大横幅
-            "SMALL_VIDEO_BANNER": 211,  # 视频小横幅
-
-            # HTML类 (311)
-            "PLAYABLE_AD": 311,  # 试玩广告
+            # 视频类 (2xx)
+            "VIDEO_END_CARD": 211,  # 全屏创意 - 视频&图片结束卡片
+            "SPLASH_AD": 211,  # 开屏广告
+            "INTERSTITIAL_VIDEO": 211,  # 视频类插屏广告
+            "REWARDED_VIDEO": 211,  # 激励视频广告
+            "VIDEO_PLAYABLE": 212,  # 全屏创意 - 视频&试玩广告
+            "FULL_SCREEN_VIDEO": 213,  # 全屏创意 - 全屏视频
+            "NATIVE_VIDEO": 213,  # 原生视频广告
+            "INSTREAM_VIDEO": 213,  # 流媒体视频广告
+            "LARGE_VIDEO_BANNER": 221,  # 大横幅创意 - 视频大横幅
+            "SMALL_VIDEO_BANNER": 231,  # 小横幅创意 - 视频小横幅
 
             # 通用类型（如果API返回这些）
             "VIDEO": 211,  # 视频类通用
             "IMAGE": 111,  # 图片类通用
-            "PLAYABLE": 311  # HTML类通用
+            "PLAYABLE": 311,  # HTML类通用
+            "PLAYABLE_AD": 311  # HTML类通用（同义词）
         }
         # 构建创意组
         creative_set = {
@@ -1005,7 +1043,7 @@ def create_offer():
                 {
                     "creative_name": creative.get("creative_name"),
                     "creative_md5": creative.get("creative_md5"),
-                    "creative_type":creative.get("creative_type"),
+                    "creative_type": creative.get("creative_type"),
                     "dimension": creative.get("dimension"),
 
                 }
@@ -1044,6 +1082,7 @@ def create_offer():
             "campaign_id": campaign_id,
             "offer_name": offer_name,
             "daily_cap_type": "BUDGET",
+            "daily_cap": 200,
             "promote_timezone": promote_timezone,  # 数字偏移量
             "start_time": start_time,  # 一个月后开始
             "target_geo": target_geo,  # 字符串，如"US"或"US,GB"
@@ -1316,6 +1355,7 @@ def add_to_blacklist():
             "msg": f"服务器错误: {str(e)}"
         }), 500
 
+
 @app.route('/api/update_bid_rate', methods=['POST'])
 def update_bid_rate():
     """更新广告单元出价接口"""
@@ -1414,11 +1454,6 @@ def update_bid_rate():
             "code": 500,
             "msg": f"服务器错误: {str(e)}"
         }), 500
-
-
-
-
-
 
 
 flask_port = None
