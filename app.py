@@ -1194,6 +1194,7 @@ def get_offer_by_name():
         if response.status_code == 200:
             mtg_data = response.json()
             if mtg_data.get("code") == 200 and mtg_data['data']['list']:
+                print(mtg_data)
                 offer_detail = mtg_data['data']['list'][0]
                 logging.info(f"成功获取广告单元详情: ID={offer_detail['offer_id']}")
                 # print(offer_detail)
@@ -1228,6 +1229,109 @@ def get_offer_by_name():
             "code": 500,
             "msg": f"服务器错误: {str(e)}"
         }), 500
+
+
+MINTERGRAL_API_BASE = "https://ss-api.mintegral.com/api/v1"
+def get_mintegralid_headers(FIXED_COOKIE):
+    """生成Mintegral API请求头（使用固定Cookie）"""
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36",
+        "Content-Type": "application/json",
+        "Cookie": FIXED_COOKIE,
+        "Accept": "application/json, text/plain, */*",
+        "Accept-Encoding": "gzip, deflate, br, zstd",
+        "Accept-Language": "zh-CN,zh;q=0.9",
+        "Origin": "https://adv.mintegral.com",
+        "Referer": "https://adv.mintegral.com/cn/offers"
+    }
+    return headers
+
+@app.route('/api/fetch_ids', methods=['GET'])
+def get_offer_material_ids():
+    """获取广告单元的所有material IDs（只统计audit_status为2的material）"""
+    try:
+        offer_id = request.args.get('offer_id')
+        FIXED_COOKIE = request.args.get('fixed_cookie')
+        print(offer_id)
+        print(FIXED_COOKIE)
+
+        # 构建MTG API请求
+        headers = get_mintegralid_headers(FIXED_COOKIE)
+
+        # 发送请求到MTG API
+        response = requests.get(
+            f"{MINTERGRAL_API_BASE}/offers/{offer_id}",
+            headers=headers,
+            timeout=30
+        )
+
+        logger.info(f"API响应状态码: {response.status_code}")
+        logger.info(f"API响应内容: {response.text}")
+
+        # 处理响应
+        if response.status_code == 200:
+            mtg_data = response.json()
+
+            if mtg_data.get("code") == 200:
+                offer_detail = mtg_data.get('data', {})
+
+                # 提取所有audit_status为2的material IDs
+                material_ids = []
+                creative_groups = offer_detail.get('creative_groups', [])
+
+                for group in creative_groups:
+                    materials = group.get('materials', [])
+                    for material in materials:
+                        # 只统计audit_status为2的material
+                        if material.get('audit_status') == 2:
+
+                            material_id = material.get('offer_material_id')
+                            if material_id:
+                                material_ids.append(material_id)
+                                logger.info(
+                                    f"找到audit_status=2的material: ID={material_id}, 名称={material.get('material_name')}")
+
+                logger.info(f"成功提取 {len(material_ids)} 个audit_status=2的material IDs")
+                print(material_ids)
+
+                # 返回结果字典
+                return {
+                    "code": 200,
+                    "msg": "success",
+                    "data": {
+                        "offer_id": offer_id,
+                        "material_ids": material_ids,
+                        "material_count": len(material_ids),
+                        "audit_status": 2  # 添加审核状态标记
+                    }
+                }
+            else:
+                msg = mtg_data.get('msg', '未找到广告单元')
+                logger.warning(f"未找到广告单元: {msg}")
+                return {
+                    "code": 404,
+                    "msg": f"未找到ID为 '{offer_id}' 的广告单元"
+                }
+        else:
+            logger.error(f"MTG API请求失败: HTTP {response.status_code}")
+            return {
+                "code": 500,
+                "msg": f"MTG API请求失败: HTTP {response.status_code}"
+            }
+
+    except requests.exceptions.Timeout:
+        logger.error("MTG API请求超时")
+        return {
+            "code": 504,
+            "msg": "MTG API请求超时"
+        }
+    except Exception as e:
+        logger.exception("获取失败")
+        return {
+            "code": 500,
+            "msg": f"服务器错误: {str(e)}"
+        }
+
 
 
 @app.route('/api/add_to_blacklist', methods=['POST'])
