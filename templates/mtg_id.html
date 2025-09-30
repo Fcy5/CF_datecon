@@ -125,6 +125,12 @@
             background: white;
         }
 
+        textarea[readonly] {
+            background-color: #f0f0f0;
+            cursor: not-allowed;
+            border-color: #d0d0d0;
+        }
+
         .btn {
             padding: 15px 30px;
             border-radius: 8px;
@@ -161,7 +167,7 @@
             border-radius: 12px;
             padding: 25px;
             border: 1px solid #e2e8f0;
-            display: none;
+            display: block;
         }
 
         .detail-grid {
@@ -302,7 +308,7 @@
             padding: 15px;
             border-radius: 8px;
             font-weight: 500;
-            display: none;
+            display: block;
         }
 
         .success-message {
@@ -325,7 +331,7 @@
             background: #f8fafc;
             border-radius: 8px;
             border: 1px solid #e2e8f0;
-            display: none;
+            display: block;
         }
 
         .response-detail-item {
@@ -560,7 +566,7 @@
 
                     <div class="response-message" id="response-message"></div>
 
-                    <div class="response-details" id="response-details" style="display: none;">
+                    <div class="response-details" id="response-details" style="display: block;">
                         <div class="response-detail-item">
                             <div class="response-label">已屏蔽流量ID数量:</div>
                             <div id="response-fixed-count">0</div>
@@ -574,6 +580,37 @@
                             <div id="response-total-count">0</div>
                         </div>
                     </div>
+                </div>
+
+                <div class="cookie-management-section" style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
+                    <div class="section-title">
+                        <i class="fas fa-cookie-bite"></i>
+                        <h2>Cookie与ID管理</h2>
+                    </div>
+
+                    <div class="additional-input">
+                        <div class="additional-label">
+                            <i class="fas fa-key"></i>
+                            <span>Cookie值</span>
+                        </div>
+                        <input type="text" id="cookie-input" placeholder="请输入Cookie值">
+                        <div class="input-hint">用于身份验证和授权的Cookie信息</div>
+                    </div>
+
+                    <div class="additional-input">
+                        <div class="additional-label">
+                            <i class="fas fa-list-ul"></i>
+                            <span>多条ID列表(拒绝）</span>
+                        </div>
+                        <textarea id="multiple-ids-display" placeholder="ID列表将在这里显示" readonly></textarea>
+                        <div class="input-hint">此区域为只读，显示获取到的ID列表</div>
+                    </div>
+
+                    <button class="btn" id="fetch-ids-btn">
+                        <i class="fas fa-download"></i> 获取ID列表
+                    </button>
+
+                    <div class="response-message" id="fetch-ids-response"></div>
                 </div>
 
                 <div class="update-bid-section">
@@ -661,6 +698,9 @@
 
             // 更新出价按钮
             document.getElementById('update-bid-btn').addEventListener('click', updateBidRate);
+
+            // 获取ID列表按钮
+            document.getElementById('fetch-ids-btn').addEventListener('click', fetchIdsWithCookie);
 
             // 为初始行添加删除事件
             document.querySelector('.remove-bid-row-btn').addEventListener('click', function() {
@@ -881,6 +921,40 @@
             document.getElementById('response-fixed-count').textContent = data.fixed_count || FIXED_MTGIDS.length;
             document.getElementById('response-additional-count').textContent = data.additional_count || 0;
             document.getElementById('response-total-count').textContent = data.total_count || FIXED_MTGIDS.length;
+        }
+
+        // 获取ID列表
+        async function fetchIdsWithCookie() {
+            const cookie = document.getElementById('cookie-input').value.trim();
+            const offerId = document.getElementById('detail-offer-id').textContent;
+            if (!cookie) {
+                showResponse('请输入Cookie值', 'error', 'fetch-ids-response');
+                return;
+            }
+            if (!offerId || offerId === '-') {
+                showResponse('请先查询广告单元', 'error', 'response-message');
+                return;
+            }
+
+            try {
+                // 在实际应用中，这里会调用后端API
+                const response = await axios.get('/api/fetch_ids', {
+                     params: {
+                fixed_cookie: cookie,
+                offer_id: offerId
+            }});
+
+                if (response.data.code === 200) {
+                    // 显示获取到的ID列表
+                    const idsDisplay = document.getElementById('multiple-ids-display');
+                    idsDisplay.value = response.data.data.material_ids.join('\n');
+                    showResponse(`成功获取 ${response.data.data.material_count} 条ID`, 'success', 'fetch-ids-response');
+                } else {
+                    showResponse(response.data.msg || '获取ID列表失败', 'error', 'fetch-ids-response');
+                }
+            } catch (error) {
+                showResponse('获取ID列表失败', 'error', 'fetch-ids-response');
+            }
         }
 
         // 页面加载完成后初始化
