@@ -496,8 +496,10 @@ def index():
 # Access Key和API Key
 # HARDCODED_ACCESS_KEY = "157b51a428d2bcf8f837aed3690ca322"
 # HARDCODED_API_KEY = "f5a790d556f481ff7ecc4a0e5ce8cad7"
-HARDCODED_ACCESS_KEY = "5cc4db728653da2316ca9309d4ff894f"
-HARDCODED_API_KEY = "8bf63783e0a77a56381ec81b2b935a8a"
+# HARDCODED_ACCESS_KEY = "5cc4db728653da2316ca9309d4ff894f"
+# HARDCODED_API_KEY = "8bf63783e0a77a56381ec81b2b935a8a"
+HARDCODED_ACCESS_KEY = "f5eabb9667d81033e976200e589b8c42"
+HARDCODED_API_KEY = "c861577ab4d049184c56ae419ad5f50a"
 MINTERGRAL_API_URL = "https://ss-api.mintegral.com/api/open/v1"
 MINTERGRAL_CAMPAIGN_URL = "https://ss-api.mintegral.com/api/open/v1/campaign"
 MINTERGRAL_UPLOAD_URL = "https://ss-storage-api.mintegral.com/api/open/v1/creatives/upload"
