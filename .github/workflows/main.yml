@@ -1,56 +1,109 @@
-name: Build macOS App
+# name: Build macOS App
+
+# on: [push]
+
+# jobs:
+#   build:
+#     runs-on: macos-latest
+    
+#     steps:
+#     - uses: actions/checkout@v4
+      
+#     - name: Set up Python
+#       uses: actions/setup-python@v5
+#       with:
+#         python-version: '3.9'
+#         # 移除缓存避免requirements.txt报错
+    
+#     - name: Install Xcode tools
+#       run: |
+#         xcode-select -p || sudo xcode-select --install
+#         sudo xcodebuild -license accept
+        
+#     - name: Install dependencies
+#       run: |
+#         # 设置macOS编译环境
+#         export SDKROOT=$(xcrun --show-sdk-path)
+#         export CFLAGS="-I$SDKROOT/usr/include"
+        
+#         # 安装所有必需依赖（包含文件上传和Mac原生库）
+#         pip install pyinstaller==6.15.0  # 匹配日志中的版本
+#         pip install flask requests jinja2 werkzeug pywebview
+#         # 安装Mac原生依赖（解决闪退核心）
+#         pip install pyobjc-core==10.2 pyobjc-framework-Cocoa==10.2 pyobjc-framework-WebKit==10.2
+        
+#     - name: Build application
+#       run: |
+#         pyinstaller macos_spec.spec
+        
+#     - name: Create DMG
+#       run: |
+#         # 先检查app是否生成，避免dmg打包失败
+#         if [ -d "dist/ClickFlare工具.app" ]; then
+#           hdiutil create -volname "ClickFlare工具" \
+#             -srcfolder dist/ClickFlare工具.app \
+#             -ov -format UDZO \
+#             dist/ClickFlare工具.dmg
+#         else
+#           echo "Error: 应用未生成"
+#           exit 1
+#         fi
+        
+#     - name: Upload artifact
+#       uses: actions/upload-artifact@v4
+#       with:
+#         name: macOS-App
+#         path: dist/ClickFlare工具.dmg
+
+name: Build Windows App
 
 on: [push]
 
 jobs:
   build:
-    runs-on: macos-latest
+    runs-on: windows-latest
     
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
       
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.9'
-        # 移除缓存避免requirements.txt报错
-    
-    - name: Install Xcode tools
-      run: |
-        xcode-select -p || sudo xcode-select --install
-        sudo xcodebuild -license accept
-        
-    - name: Install dependencies
-      run: |
-        # 设置macOS编译环境
-        export SDKROOT=$(xcrun --show-sdk-path)
-        export CFLAGS="-I$SDKROOT/usr/include"
-        
-        # 安装所有必需依赖（包含文件上传和Mac原生库）
-        pip install pyinstaller==6.15.0  # 匹配日志中的版本
-        pip install flask requests jinja2 werkzeug pywebview
-        # 安装Mac原生依赖（解决闪退核心）
-        pip install pyobjc-core==10.2 pyobjc-framework-Cocoa==10.2 pyobjc-framework-WebKit==10.2
-        
-    - name: Build application
-      run: |
-        pyinstaller macos_spec.spec
-        
-    - name: Create DMG
-      run: |
-        # 先检查app是否生成，避免dmg打包失败
-        if [ -d "dist/ClickFlare工具.app" ]; then
-          hdiutil create -volname "ClickFlare工具" \
-            -srcfolder dist/ClickFlare工具.app \
-            -ov -format UDZO \
-            dist/ClickFlare工具.dmg
-        else
-          echo "Error: 应用未生成"
-          exit 1
-        fi
-        
-    - name: Upload artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: macOS-App
-        path: dist/ClickFlare工具.dmg
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+          # 保持与Mac版本一致，避免兼容性问题
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          # 安装核心打包工具，保持版本一致
+          pip install pyinstaller==6.15.0
+          
+          # 安装你的应用依赖
+          pip install flask requests jinja2 werkzeug pywebview
+          
+          # 注意：这里删除了 pyobjc 相关库，因为它们无法在 Windows 上运行
+          # 如果你在代码中显式 import 了 pyobjc，请确保用了 try-except 或者是条件导入
+      
+      - name: Build application
+        run: |
+          # 请确保你的 .spec 文件名正确，这里假设你的 spec 文件叫 clickflare.spec
+          # 如果你的 spec 文件还是 macos_spec.spec，建议复制一份改名为 windows.spec 并调整内容
+          pyinstaller clickflare.spec
+      
+      - name: Check output
+        shell: pwsh
+        run: |
+          # 简单的检查脚本，确保 exe 生成了
+          if (Test-Path "dist\ClickFlare工具.exe") {
+              Write-Host "打包成功！"
+          } else {
+              Write-Error "Error: Exe 文件未生成"
+              exit 1
+          }
+  
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Windows-App
+          path: dist/*.exe
+          # 这里会上传 dist 目录下所有的 exe 文件
